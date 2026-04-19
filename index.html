@@ -172,15 +172,31 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 
 /* 지나가는 강아지 */
 .walker { position:absolute; z-index:4; pointer-events:none; font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
-@keyframes walkL2R { from{transform:translateX(-80px)} to{transform:translateX(calc(100vw + 80px))} }
-@keyframes walkR2L { from{transform:translateX(calc(100vw + 80px)) scaleX(-1)} to{transform:translateX(-80px) scaleX(-1)} }
-/* 사람에게 다가가는 애니메이션 */
-@keyframes approachAndLeave {
-  0%{transform:translateX(-80px)}
-  40%{transform:translateX(var(--target-x))}
-  55%{transform:translateX(calc(var(--target-x) - 15px))}
-  70%{transform:translateX(var(--target-x))}
-  100%{transform:translateX(calc(100vw + 80px))}
+/* 걷는 통통 효과 */
+@keyframes walkerBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+/* 왼→오 (이모지 기본방향) */
+@keyframes walkL2R {
+  from { left:-80px; }
+  to   { left:calc(100vw + 80px); }
+}
+/* 오→왼 (이모지 반전) */
+@keyframes walkR2L {
+  from { left:calc(100vw + 80px); }
+  to   { left:-80px; }
+}
+/* 다가갔다 돌아가기 */
+@keyframes approachAndBack {
+  0%   { left:-80px; }
+  45%  { left:var(--tx); }
+  55%  { left:var(--tx); }
+  100% { left:calc(100vw + 80px); }
+}
+/* 다가가는 척 하다 멈추고 돌아가기 */
+@keyframes fakeTease {
+  0%   { left:-80px; }
+  30%  { left:var(--halfway); }
+  50%  { left:var(--halfway); }
+  100% { left:-80px; }
 }
 
 /* 하단 버튼 */
@@ -809,38 +825,64 @@ document.getElementById('nav-bgm').addEventListener('click', function() {
   else { audio.pause(); this.classList.remove('on'); bgmOn=false; }
 });
 
-// ===== 지나가는 강아지 (바닥만, 3~5분마다) =====
-const WALKERS = ['🐕','🐈','🐕‍🦺'];
-let occupiedSeats = () => Object.values(seats).filter(s=>s);
+// ===== 지나가는 동물 =====
+// 방향별 이모지 (왼→오 / 오→왼 전용)
+const WALKERS_LTR = ['🐕','🐈','🐕‍🦺']; // 기본 방향 (왼→오)
+const WALKERS_RTL = ['🐕','🐈','🐕‍🦺']; // 오→왼 (이모지 자체 반전 없이 left 애니메이션으로 처리)
 
 function spawnWalker() {
   const floor = document.getElementById('cafe-floor');
-  const floorH = floor.clientHeight;
+  const W = window.innerWidth;
   const el = document.createElement('div');
-  const rtl = Math.random() > 0.5;
-  const dur = 12 + Math.random()*8; // 느리게 — 12~20초
   el.className = 'walker';
-  el.textContent = WALKERS[Math.floor(Math.random()*WALKERS.length)];
-  el.style.bottom = (10 + Math.floor(Math.random()*12)) + 'px'; // 바닥 근처만
-  el.style.fontSize = (16 + Math.floor(Math.random()*5)) + 'px';
 
-  // 가끔 (30%) 사람에게 다가가기
-  const doApproach = Math.random() < 0.3 && occupiedSeats().length > 0;
-  if (doApproach) {
-    const targetX = Math.floor(Math.random() * (window.innerWidth * 0.4) + window.innerWidth * 0.3);
-    el.style.setProperty('--target-x', targetX+'px');
-    el.style.animationName = 'approachAndLeave';
-    el.style.animationDuration = (dur*1.3)+'s';
-    el.style.animationTimingFunction = 'ease-in-out';
-    el.style.animationFillMode = 'forwards';
+  // 크기
+  const size = 18 + Math.floor(Math.random()*6);
+  el.style.fontSize = size + 'px';
+
+  // 바닥 높이 — 테이블과 절대 안 겹치도록 맨 아래 고정
+  el.style.bottom = (4 + Math.floor(Math.random()*10)) + 'px';
+  el.style.position = 'absolute';
+
+  // 행동 패턴 결정 (3가지)
+  const pattern = Math.random();
+  const hasOccupied = Object.values(getSeats()).some(s=>s);
+
+  if (pattern < 0.5) {
+    // ① 그냥 지나가기 (50%) — 왼→오
+    const dur = 16 + Math.random()*10;
+    el.textContent = WALKERS_LTR[Math.floor(Math.random()*WALKERS_LTR.length)];
+    el.style.left = '-80px';
+    el.style.animation = `walkL2R ${dur}s linear forwards, walkerBob 0.5s ease-in-out infinite`;
+    floor.appendChild(el);
+    setTimeout(() => el.remove(), (dur+1)*1000);
+
+  } else if (pattern < 0.75 && hasOccupied) {
+    // ② 캐릭터한테 다가갔다 돌아가기 (25%, 앉은 사람 있을 때)
+    const targetX = Math.floor(W * 0.25 + Math.random() * W * 0.5);
+    const dur = 20 + Math.random()*8;
+    el.textContent = WALKERS_LTR[Math.floor(Math.random()*WALKERS_LTR.length)];
+    el.style.left = '-80px';
+    el.style.setProperty('--tx', targetX+'px');
+    el.style.animation = `approachAndBack ${dur}s ease-in-out forwards, walkerBob 0.5s ease-in-out infinite`;
+    floor.appendChild(el);
+    // 다가갈 때 반전 (돌아올 때)
+    setTimeout(() => { el.style.transform = 'scaleX(-1)'; }, dur*0.55*1000);
+    setTimeout(() => el.remove(), (dur+1)*1000);
+
   } else {
-    el.style.animationName = rtl ? 'walkR2L' : 'walkL2R';
-    el.style.animationDuration = dur+'s';
-    el.style.animationTimingFunction = 'linear';
-    el.style.animationFillMode = 'forwards';
+    // ③ 다가가는 척 하다가 멈추고 돌아가기 (25%)
+    const halfway = Math.floor(W * 0.2 + Math.random() * W * 0.3);
+    const dur = 18 + Math.random()*6;
+    el.textContent = WALKERS_LTR[Math.floor(Math.random()*WALKERS_LTR.length)];
+    el.style.left = '-80px';
+    el.style.setProperty('--halfway', halfway+'px');
+    el.style.animation = `fakeTease ${dur}s ease-in-out forwards, walkerBob 0.5s ease-in-out infinite`;
+    floor.appendChild(el);
+    // 돌아올 때 반전
+    setTimeout(() => { el.style.transform = 'scaleX(-1)'; }, dur*0.5*1000);
+    setTimeout(() => el.remove(), (dur+1)*1000);
   }
-  floor.appendChild(el);
-  setTimeout(() => el.remove(), (dur*1.5+1)*1000);
 }
 
 function scheduleWalker() {

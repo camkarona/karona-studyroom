@@ -316,20 +316,77 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
     <button class="big-btn" id="nav-credit"><span class="icon">☕</span><span>Credit</span></button>
   </div>
 
-  <!-- 크레딧 오버레이 -->
+  <!-- 캐릭터 선택 모달 -->
+  <div id="char-modal" style="display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.85);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:20px;padding:26px 22px;width:90%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-size:28px">☕</div>
+      <div style="font-size:16px;font-weight:bold;color:#f0ddb0;">나의 캐릭터를 선택하세요</div>
+      <div style="font-size:12px;color:rgba(200,180,120,0.5);text-align:center;">2시간 이상 공부하면 특별 캐릭터가 해금됩니다 🔒</div>
+      <!-- 기본 캐릭터 -->
+      <div style="display:flex;gap:14px;justify-content:center;">
+        <div class="char-pick" data-char="🧑‍💻" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);">
+          <span style="font-size:36px">🧑‍💻</span>
+          <span style="font-size:11px;color:#c8b878;">남자</span>
+        </div>
+        <div class="char-pick" data-char="👩‍💻" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);">
+          <span style="font-size:36px">👩‍💻</span>
+          <span style="font-size:11px;color:#c8b878;">여자</span>
+        </div>
+        <div class="char-pick" data-char="🐱" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);">
+          <span style="font-size:36px">🐱</span>
+          <span style="font-size:11px;color:#c8b878;">고양이</span>
+        </div>
+      </div>
+      <!-- 해금 캐릭터 -->
+      <div style="width:100%;border-top:1px solid rgba(255,255,255,0.07);padding-top:14px;">
+        <div style="font-size:11px;color:rgba(200,180,120,0.4);text-align:center;margin-bottom:10px;" id="unlock-label">🔒 2시간 이상 공부하면 해금</div>
+        <div style="display:flex;gap:14px;justify-content:center;">
+          <div class="char-pick char-locked" data-char="🐕" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
+            <span style="font-size:36px">🐕</span>
+            <span style="font-size:11px;color:#888;">강아지</span>
+          </div>
+          <div class="char-pick char-locked" data-char="🐼" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
+            <span style="font-size:36px">🐼</span>
+            <span style="font-size:11px;color:#888;">판다</span>
+          </div>
+          <div class="char-pick char-locked" data-char="🐯" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:12px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
+            <span style="font-size:36px">🐯</span>
+            <span style="font-size:11px;color:#888;">호랑이</span>
+          </div>
+        </div>
+      </div>
+      <button id="char-confirm" style="width:100%;padding:13px;border:none;border-radius:12px;background:rgba(255,220,100,0.15);border:1px solid rgba(255,220,100,0.3);color:#f0d878;font-weight:bold;font-size:14px;cursor:pointer;opacity:0.4;" disabled>
+        선택 후 입장하기
+      </button>
+    </div>
+  </div>
+
+  <!-- 2번방 이동 팝업 -->
+  <div id="room2-popup" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:250;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:20px;padding:26px 22px;width:88%;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">
+      <div style="font-size:28px">🪑</div>
+      <div style="font-size:15px;font-weight:bold;color:#f0ddb0;">공부방이 다 찼습니다</div>
+      <div style="font-size:13px;color:#c8b878;line-height:1.7;">2번방으로 이동하시겠습니까?<br><span style="font-size:11px;color:rgba(200,180,120,0.5);">1번방과 동일한 공부방이에요 ☕</span></div>
+      <div style="display:flex;gap:10px;width:100%;">
+        <button id="room2-cancel" style="flex:1;padding:11px;border:none;border-radius:12px;background:rgba(255,255,255,0.07);color:#c8b878;font-weight:bold;font-size:13px;cursor:pointer;">취소</button>
+        <button id="room2-go" style="flex:1;padding:11px;border:none;border-radius:12px;background:rgba(255,220,100,0.18);color:#f0d878;font-weight:bold;font-size:13px;cursor:pointer;">2번방 이동 →</button>
+      </div>
+    </div>
+  </div>
   <div id="credit-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:200;flex-direction:column;align-items:center;justify-content:center;">
-    <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.15);border-radius:20px;padding:30px 28px;width:82%;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.15);border-radius:20px;padding:28px 26px;width:82%;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:12px;">
       <div style="font-size:32px">☕</div>
       <div style="font-size:16px;font-weight:bold;color:#f0ddb0;text-align:center;">까로나 공부방</div>
-      <div style="font-size:13px;color:#c8b878;text-align:center;line-height:1.8;">
+      <div style="font-size:13px;color:#c8b878;text-align:center;line-height:1.9;">
         이용해 주셔서 감사합니다 🙏<br>
-        <br>
-        <span style="color:rgba(200,180,120,0.6);font-size:12px;">만든 사람</span><br>
-        <span style="color:#f0ddb0;font-weight:bold;">Karona</span>
+        <span style="color:rgba(200,180,120,0.5);font-size:11px;">Made with ☕ in Phnom Penh</span>
       </div>
-      <a id="credit-contact" href="https://t.me/camkarona" style="display:flex;align-items:center;gap:8px;background:rgba(100,160,220,0.15);border:1px solid rgba(100,160,220,0.3);border-radius:12px;padding:10px 20px;color:#90c8f0;font-size:13px;font-weight:bold;text-decoration:none;">
-        💬 @camkarona 문의하기
-      </a>
+      <div style="width:100%;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;color:rgba(200,180,120,0.5);text-align:center;margin-bottom:2px;">만든 사람 · Karona</div>
+        <a id="credit-contact" href="https://t.me/camkarona" style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(100,160,220,0.15);border:1px solid rgba(100,160,220,0.3);border-radius:12px;padding:10px;color:#90c8f0;font-size:13px;font-weight:bold;text-decoration:none;">
+          💬 문의 / 후원 @camkarona
+        </a>
+      </div>
       <button id="credit-close" style="width:100%;padding:11px;border:none;border-radius:12px;background:rgba(255,255,255,0.07);color:#c8b878;font-weight:bold;font-size:14px;cursor:pointer;">닫기</button>
     </div>
   </div>
@@ -363,8 +420,52 @@ if (tg) {
 }
 const myUserId = tg?.initDataUnsafe?.user?.id ? 'tg_'+tg.initDataUnsafe.user.id : 'u_'+Date.now();
 const myName = tg?.initDataUnsafe?.user?.first_name || '손님';
-const CHARS = ['🧑‍💻','👩‍🎓','🧑‍🎓','🐱','🐼','🦊','🐸','🐨'];
-const myChar = CHARS[Math.floor(Math.random()*CHARS.length)];
+let myChar = '🧑‍💻'; // 캐릭터 선택 후 설정
+let currentRoom = 1; // 현재 방 번호
+
+// ===== 캐릭터 선택 모달 =====
+let selectedChar = null;
+
+async function initCharModal() {
+  // 이번 주 누적 시간 확인 → 해금 여부
+  const snap = await get(ref(db, `leaderboard/${getWeekInfo().key}/${myUserId}`));
+  const myMinutes = snap.val()?.minutes || 0;
+  const unlocked = myMinutes >= 120;
+
+  if (unlocked) {
+    document.getElementById('unlock-label').textContent = '🔓 해금 완료! 특별 캐릭터를 사용할 수 있어요';
+    document.querySelectorAll('.char-locked').forEach(el => {
+      el.classList.remove('char-locked');
+      el.style.opacity = '1';
+      el.style.borderColor = 'rgba(255,255,255,0.1)';
+      el.style.background = 'rgba(255,255,255,0.04)';
+    });
+  }
+
+  document.querySelectorAll('.char-pick').forEach(el => {
+    el.addEventListener('click', () => {
+      if (el.classList.contains('char-locked')) return;
+      document.querySelectorAll('.char-pick').forEach(e => {
+        e.style.borderColor = 'rgba(255,255,255,0.1)';
+        e.style.background = 'rgba(255,255,255,0.04)';
+      });
+      el.style.borderColor = 'rgba(255,220,100,0.6)';
+      el.style.background = 'rgba(255,220,100,0.12)';
+      selectedChar = el.dataset.char;
+      const btn = document.getElementById('char-confirm');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    });
+  });
+
+  document.getElementById('char-confirm').addEventListener('click', () => {
+    if (!selectedChar) return;
+    myChar = selectedChar;
+    document.getElementById('char-modal').style.display = 'none';
+    renderSeats();
+  });
+}
+initCharModal();
 
 // ===== WakeLock =====
 let wakeLock = null;
@@ -401,12 +502,12 @@ function playWipeSound() {
 function playWriteSound() {
   try {
     const ctx = getACtx();
-    [880,1050].forEach((freq,i) => {
+    [520, 620].forEach((freq,i) => {
       setTimeout(() => {
         try {
           const o=ctx.createOscillator(), g=ctx.createGain();
-          o.type='sine'; o.frequency.setValueAtTime(freq,ctx.currentTime); o.frequency.linearRampToValueAtTime(freq*1.3,ctx.currentTime+0.08);
-          g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.08,ctx.currentTime+0.02); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.12);
+          o.type='sine'; o.frequency.setValueAtTime(freq,ctx.currentTime); o.frequency.linearRampToValueAtTime(freq*1.15,ctx.currentTime+0.08);
+          g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.04,ctx.currentTime+0.02); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.12);
           o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.12);
         } catch(e){}
       }, i*110);
@@ -517,7 +618,24 @@ const STATUS_ICONS = {
   phone:'📱', hungry:'🤤', zoning:'😶‍🌫️', goinghome:'🏃'
 };
 
-let seats = {}, mySeatRef = null;
+let seats = {}, seats2 = {}, mySeatRef = null;
+
+// ===== 2번방 =====
+onValue(ref(db,'seats2'), snap => { seats2=snap.val()||{}; });
+
+document.getElementById('room2-cancel').addEventListener('click', () => {
+  document.getElementById('room2-popup').style.display = 'none';
+});
+document.getElementById('room2-go').addEventListener('click', () => {
+  document.getElementById('room2-popup').style.display = 'none';
+  currentRoom = 2;
+  // 헤더 타이틀 변경
+  document.querySelector('.title').textContent = '☕ 까로나 공부방 2호';
+  renderSeats();
+});
+
+function getSeats() { return currentRoom === 1 ? seats : seats2; }
+function getSeatsPath() { return currentRoom === 1 ? 'seats' : 'seats2'; }
 
 function fmtTime(ms) {
   const mins = Math.floor((Date.now()-ms)/60000);
@@ -529,8 +647,9 @@ function fmtTime(ms) {
 function renderSeats() {
   const area = document.getElementById('tables-area');
   area.innerHTML = ''; let count = 0;
+  const curSeats = getSeats();
   SEAT_POS.forEach((pos, i) => {
-    const key='seat_'+i, user=seats[key], isMe=user&&user.userId===myUserId;
+    const key='seat_'+i, user=curSeats[key], isMe=user&&user.userId===myUserId;
     if (user) count++;
     const spot = document.createElement('div');
     spot.className = 'table-spot';
@@ -570,7 +689,6 @@ function renderSeats() {
         <div class="table-legs"><div class="table-leg"></div><div class="table-leg"></div></div>
         <div class="chair-back"></div><div class="chair-seat"></div>
         <div class="empty-hint">비었음</div>`;
-      // 빈 자리 — 전체 클릭 가능
       spot.style.cursor = 'pointer';
       spot.addEventListener('click', () => takeSeat(i, key));
     }
@@ -580,20 +698,27 @@ function renderSeats() {
 }
 
 function takeSeat(i, key) {
-  // 이미 같은 자리면 무시
-  if (seats[key] && seats[key].userId === myUserId) return;
-  // 다른 자리에 앉아있으면 먼저 비우기
-  if (mySeatRef) {
-    remove(mySeatRef);
-    mySeatRef = null;
+  const curSeats = getSeats();
+  if (curSeats[key] && curSeats[key].userId === myUserId) return;
+
+  // 1번방 꽉 찼으면 2번방 팝업
+  if (currentRoom === 1) {
+    const occupiedCount = Object.values(seats).filter(s=>s).length;
+    if (occupiedCount >= 8 && !mySeatRef) {
+      document.getElementById('room2-popup').style.display = 'flex';
+      return;
+    }
   }
-  mySeatRef = ref(db,'seats/'+key);
+
+  if (mySeatRef) { remove(mySeatRef); mySeatRef = null; }
+  mySeatRef = ref(db, getSeatsPath()+'/'+key);
   set(mySeatRef, {userId:myUserId,name:myName,char:myChar,joinedAt:Date.now(),status:'studying',statusMsg:'',statusTime:0});
   onDisconnect(mySeatRef).remove();
   requestWakeLock();
 }
 
 onValue(ref(db,'seats'), snap => { seats=snap.val()||{}; renderSeats(); });
+onValue(ref(db,'seats2'), snap => { seats2=snap.val()||{}; if(currentRoom===2) renderSeats(); });
 setInterval(renderSeats, 10000);
 
 // ===== 상태 변경 =====

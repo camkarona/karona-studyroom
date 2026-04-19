@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>☕ 까로나 공부방</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Khmer+OS+Battambang&family=Nanum+Brush+Script&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
+#app { width:100%; height:var(--tg-viewport-height,100vh); height:100dvh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+
+/* 배경 — 은은하게 어두운 카페 */
+#bg-layer {
+  position:absolute; inset:0; z-index:0;
+  background: radial-gradient(ellipse at 30% 40%, #3a3428 0%, #2a2418 50%, #1e1c14 100%);
+}
+#bg-layer::before {
+  content:''; position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,0.018) 0,rgba(255,255,255,0.018) 1px,transparent 1px,transparent 44px),
+    repeating-linear-gradient(0deg,rgba(255,255,255,0.018) 0,rgba(255,255,255,0.018) 1px,transparent 1px,transparent 44px);
+  background-size:44px 44px;
+}
+/* 조명 */
+#bg-layer::after {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 200px 180px at 25% 30%, rgba(255,200,80,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 180px 160px at 75% 25%, rgba(255,180,60,0.06) 0%, transparent 70%);
+}
+
+/* 헤더 */
+#header {
+  background:rgba(30,26,18,0.92); backdrop-filter:blur(10px);
+  padding:11px 16px; padding-top:calc(11px + env(safe-area-inset-top,0px));
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid rgba(255,220,100,0.08);
+  position:relative; z-index:10; flex-shrink:0;
+}
+.title { color:#f0ddb0; font-size:16px; font-weight:bold; }
+.online-badge { font-size:12px; color:#c8b878; display:flex; align-items:center; gap:5px; background:rgba(255,220,100,0.1); padding:4px 10px; border-radius:15px; font-weight:bold; }
+.dot { width:7px; height:7px; background:#7ed97e; border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* 칠판 — 중앙 고정 */
+#center-board-area {
+  position:absolute; top:46%; left:50%; transform:translate(-50%,-50%);
+  z-index:5; display:flex; flex-direction:column; align-items:center;
+  width:100%; pointer-events:none;
+}
+#blackboard {
+  pointer-events:auto; width:230px;
+  background:#1a3820; border-radius:8px; border:5px solid #8b6914;
+  box-shadow:inset 0 2px 12px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.5);
+  padding:14px 12px 10px; text-align:center; position:relative; overflow:hidden;
+}
+#blackboard::before {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.007) 2px,rgba(255,255,255,0.007) 4px);
+  pointer-events:none;
+}
+/* 칠판 다리 */
+#blackboard::after {
+  content:''; position:absolute; bottom:-13px; left:0; right:0; height:13px;
+  background:linear-gradient(90deg, transparent 20%, #6b4f10 25%, #6b4f10 35%, transparent 40%, transparent 60%, #6b4f10 65%, #6b4f10 75%, transparent 80%);
+}
+/* 와이프 오버레이 */
+#wipe-overlay {
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(90deg,#1a3820 0%,#1a3820 50%,transparent 50%);
+  background-size:200% 100%; background-position:100% 0;
+}
+#wipe-overlay.wiping { animation:boardWipe 0.65s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes boardWipe{0%{background-position:100% 0}40%{background-position:0% 0}60%{background-position:0% 0}100%{background-position:-100% 0}}
+.chalk-write { animation:chalkIn 0.5s ease 0.6s both; }
+@keyframes chalkIn{0%{opacity:0;letter-spacing:4px}100%{opacity:1;letter-spacing:normal}}
+
+/* 단어 클릭 버튼 */
+.kh-clickable {
+  display:flex; justify-content:center; align-items:center; gap:8px;
+  margin:0 auto 6px; cursor:pointer; padding:6px 10px; border-radius:12px;
+  background:transparent; border:none; outline:none; -webkit-appearance:none;
+  transition:background 0.1s, transform 0.1s; touch-action:manipulation; width:100%;
+}
+.kh-clickable:active { background:rgba(255,255,255,0.12); transform:scale(0.93); }
+#word-kh {
+  font-family:'Khmer OS Battambang', 'Khmer', 'Noto Sans Khmer', sans-serif;
+  font-size:34px; color:#f0ecd8; line-height:1.2; transition:opacity 0.4s;
+}
+.sound-icon { font-size:20px; opacity:0.85; transition:transform 0.15s; }
+.kh-clickable:active .sound-icon { transform:scale(1.3); }
+/* TTS 재생 중 표시 */
+.sound-icon.playing { animation:soundPulse 0.5s ease-in-out infinite alternate; }
+@keyframes soundPulse{0%{opacity:0.5;transform:scale(0.9)}100%{opacity:1;transform:scale(1.1)}}
+
+#word-kr {
+  font-family:'Nanum Brush Script','Nanum Freehand',cursive;
+  font-size:24px; color:#b8d0b8; transition:opacity 0.4s; margin-bottom:6px;
+}
+.board-sub {
+  font-family:'Nanum Brush Script',cursive;
+  font-size:14px; color:rgba(160,200,160,0.4); margin-top:4px;
+}
+
+/* 카페 공간 */
+#cafe-floor { flex:1; position:relative; z-index:1; overflow:hidden; }
+
+/* 선반 */
+.cafe-shelf {
+  position:absolute; top:0; left:0; right:0; height:26px;
+  background:linear-gradient(180deg,#5a3a18,#4a2e10);
+  border-bottom:3px solid #3a2008; display:flex; align-items:center;
+  padding:0 14px; gap:10px; z-index:3;
+  box-shadow:0 3px 8px rgba(0,0,0,0.4);
+}
+.shelf-item { font-size:14px; opacity:0.7; }
+
+/* 창문 */
+.cafe-window {
+  position:absolute; z-index:2;
+  background:linear-gradient(160deg,rgba(80,120,180,0.3),rgba(60,100,160,0.15));
+  border:2.5px solid #9a7828; border-radius:4px 4px 0 0;
+  box-shadow:inset 0 0 12px rgba(100,150,220,0.15),2px 2px 6px rgba(0,0,0,0.3);
+}
+.wc-h{position:absolute;top:50%;left:0;right:0;height:1.5px;background:rgba(154,120,40,0.4)}
+.wc-v{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(154,120,40,0.4)}
+
+/* 화분 */
+.plant-spot { position:absolute; z-index:3; bottom:0; display:flex; flex-direction:column; align-items:center; }
+.plant-leaf { font-size:20px; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.plant-pot { width:16px;height:11px;background:linear-gradient(180deg,#c86030,#8a3818);border-radius:2px 2px 4px 4px;box-shadow:0 2px 4px rgba(0,0,0,0.3); }
+
+/* 테이블 — 8자리 */
+#tables-area { position:absolute; inset:0; z-index:6; }
+.table-spot { position:absolute; display:flex; flex-direction:column; align-items:center; }
+.table-surface {
+  width:64px; height:13px;
+  background:linear-gradient(180deg,#d4a858,#b08840);
+  border-radius:5px; border:1px solid rgba(0,0,0,0.2);
+  box-shadow:0 4px 0 #7a5820, 0 6px 6px rgba(0,0,0,0.3);
+  position:relative;
+}
+.table-surface.mine { background:linear-gradient(180deg,#90b8d8,#6090b8); box-shadow:0 4px 0 #3868a0,0 6px 6px rgba(0,0,0,0.3); }
+.table-legs { display:flex; justify-content:space-between; width:50px; margin-top:-1px; }
+.table-leg { width:5px;height:14px;background:linear-gradient(90deg,#8a6838,#6a4820);border-radius:0 0 2px 2px; }
+.chair-back { width:44px;height:8px;background:linear-gradient(180deg,#7a5530,#5a3c20);border-radius:3px 3px 0 0;border:1px solid rgba(0,0,0,0.15); }
+.chair-back.mine { background:linear-gradient(180deg,#5070a8,#384880); }
+.chair-seat { width:50px;height:10px;background:linear-gradient(180deg,#8a6030,#6a4420);border-radius:2px;box-shadow:0 2px 0 #4a2c10; }
+.chair-seat.mine { background:linear-gradient(180deg,#6088b8,#405880); }
+.seat-wrap { position:relative; margin-bottom:-4px; display:flex; justify-content:center; cursor:pointer; }
+.seat-char { font-size:28px; filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6)); z-index:5; }
+.status-badge { position:absolute;top:-8px;right:-12px;font-size:14px;background:rgba(255,255,255,0.9);border-radius:50%;padding:2px;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:6; }
+.seat-info { margin-top:5px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.seat-name { font-size:11px;color:#f0ddb0;font-weight:bold;background:rgba(0,0,0,0.45);padding:2px 7px;border-radius:8px;text-shadow:0 1px 2px rgba(0,0,0,0.5); }
+.seat-timer { font-size:10px;color:#c8b070;background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:5px; }
+.empty-hint { font-size:11px;color:rgba(255,220,100,0.35);font-weight:bold;margin-top:4px;cursor:pointer;padding:8px; }
+
+/* 말풍선 */
+.speech-bubble {
+  position:absolute; top:-42px; left:50%; transform:translateX(-50%);
+  background:rgba(255,252,235,0.96); border:2px solid rgba(200,180,100,0.5);
+  border-radius:12px; padding:6px 12px; font-size:12px; font-weight:bold;
+  color:#3a3020; white-space:nowrap; z-index:20;
+  box-shadow:0 4px 12px rgba(0,0,0,0.25); animation:popIn 0.25s forwards;
+}
+.speech-bubble::after { content:''; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border-width:7px 6px 0; border-style:solid; border-color:rgba(200,180,100,0.5) transparent transparent; }
+.speech-bubble::before { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-width:6px 5px 0; border-style:solid; border-color:rgba(255,252,235,0.96) transparent transparent; z-index:1; }
+@keyframes popIn{0%{opacity:0;transform:translateX(-50%) scale(0.5)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+
+/* 지나가는 강아지 */
+.walker { position:absolute; z-index:4; pointer-events:none; font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
+@keyframes walkL2R { from{transform:translateX(-80px)} to{transform:translateX(calc(100vw + 80px))} }
+@keyframes walkR2L { from{transform:translateX(calc(100vw + 80px)) scaleX(-1)} to{transform:translateX(-80px) scaleX(-1)} }
+/* 사람에게 다가가는 애니메이션 */
+@keyframes approachAndLeave {
+  0%{transform:translateX(-80px)}
+  40%{transform:translateX(var(--target-x))}
+  55%{transform:translateX(calc(var(--target-x) - 15px))}
+  70%{transform:translateX(var(--target-x))}
+  100%{transform:translateX(calc(100vw + 80px))}
+}
+
+/* 하단 버튼 */
+#bottom-nav {
+  position:relative; z-index:10;
+  background:rgba(20,18,12,0.95);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+  display:flex; gap:10px;
+  border-top:1px solid rgba(255,220,100,0.08);
+  flex-shrink:0;
+}
+.big-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  padding:10px 0; background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.1); border-radius:14px;
+  color:#c8b878; font-weight:bold; font-size:12px; gap:4px; cursor:pointer;
+  transition:background 0.15s, transform 0.1s;
+}
+.big-btn:active { transform:scale(0.95); }
+.big-btn.on { background:rgba(255,220,100,0.15); border-color:rgba(255,220,100,0.3); color:#f0d878; }
+.big-btn .icon { font-size:18px; }
+
+/* 상태 오버레이 */
+#status-overlay { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.65); z-index:200; flex-direction:column; align-items:center; justify-content:center; }
+#status-overlay.open { display:flex; }
+.status-box { background:#1e1c14; padding:20px; border-radius:20px; width:85%; max-width:320px; display:flex; flex-direction:column; gap:7px; box-shadow:0 10px 40px rgba(0,0,0,0.5); border:1px solid rgba(255,220,100,0.1); }
+.status-title { text-align:center; font-weight:bold; color:#f0ddb0; margin-bottom:8px; font-size:16px; }
+.status-opt { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:12px; font-weight:bold; font-size:13px; background:rgba(255,255,255,0.05); color:#d0c8a8; cursor:pointer; transition:background 0.1s; }
+.status-opt:active { background:rgba(255,220,100,0.15); }
+.status-close { margin-top:6px; padding:12px; border:none; border-radius:12px; background:rgba(255,255,255,0.08); color:#c8b878; font-weight:bold; font-size:14px; cursor:pointer; }
+
+/* 리더보드 오버레이 */
+#lb-overlay { display:none; position:absolute; inset:0; background:rgba(20,18,12,0.98); z-index:200; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:20px; overflow-y:auto; }
+#lb-overlay.open { display:flex; }
+.lb-inner { width:90%; max-width:360px; }
+.lb-title-area { text-align:center; margin-bottom:6px; }
+.lb-main-title { font-size:22px; font-weight:bold; color:#f0ddb0; }
+.lb-period-badge { display:inline-block; background:rgba(255,220,100,0.12); border:1px solid rgba(255,220,100,0.25); border-radius:20px; padding:4px 14px; font-size:12px; color:#c8a850; margin:6px 0 16px; }
+.lb-row { display:flex; align-items:center; justify-content:space-between; padding:12px 5px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.lb-rank { font-size:18px; font-weight:bold; width:28px; text-align:center; color:#888; }
+.lb-user { flex:1; display:flex; align-items:center; gap:8px; margin-left:10px; font-size:14px; font-weight:bold; color:#f0ddb0; }
+.lb-time { font-size:13px; font-weight:bold; color:#c8a850; }
+.lb-empty { text-align:center; padding:30px; color:rgba(200,180,120,0.4); font-size:14px; }
+.lb-close-btn { width:100%; margin-top:20px; margin-bottom:30px; padding:14px; border:none; border-radius:12px; background:rgba(255,220,100,0.12); color:#f0ddb0; font-weight:bold; font-size:15px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bg-layer"></div>
+
+  <div id="header">
+    <span class="title">☕ 까로나 공부방</span>
+    <div class="online-badge"><div class="dot"></div>공부 중 <span id="cnt">0</span>명</div>
+  </div>
+
+  <div id="cafe-floor">
+    <!-- 선반 -->
+    <div class="cafe-shelf">
+      <span class="shelf-item">📚</span><span class="shelf-item">🪴</span>
+      <span class="shelf-item">📖</span><span class="shelf-item">🕯️</span>
+      <span class="shelf-item">🎋</span><span class="shelf-item">🖼️</span>
+    </div>
+    <!-- 창문 -->
+    <div class="cafe-window" style="right:14px;top:32px;width:54px;height:72px;"><div class="wc-h"></div><div class="wc-v"></div></div>
+    <div class="cafe-window" style="right:78px;top:28px;width:48px;height:64px;"><div class="wc-h"></div><div class="wc-v"></div></div>
+    <!-- 화분 -->
+    <div class="plant-spot" style="left:8px"><div class="plant-leaf">🌿</div><div class="plant-pot"></div></div>
+    <div class="plant-spot" style="left:40px"><div class="plant-leaf">🪴</div><div class="plant-pot"></div></div>
+
+    <!-- 칠판 중앙 -->
+    <div id="center-board-area">
+      <div id="blackboard">
+        <div id="wipe-overlay"></div>
+        <button class="kh-clickable" id="btn-tts">
+          <span id="word-kh" class="chalk-write">...</span>
+          <span class="sound-icon" id="sound-icon">🔊</span>
+        </button>
+        <div id="word-kr" class="chalk-write">동기화 중...</div>
+        <div class="board-sub">1분마다 새로운 단어</div>
+      </div>
+    </div>
+
+    <div id="tables-area"></div>
+  </div>
+
+  <!-- 상태 선택 -->
+  <div id="status-overlay">
+    <div class="status-box">
+      <div class="status-title">지금 내 상태는?</div>
+      <div class="status-opt" data-s="studying"   data-msg="🔥 불타오르는 중!">📖 열공중</div>
+      <div class="status-opt" data-s="distracted" data-msg="👀 살짝 딴짓 중...">🙈 딴짓중</div>
+      <div class="status-opt" data-s="dozing"     data-msg="😪 꾸벅꾸벅...">😴 조는 중</div>
+      <div class="status-opt" data-s="phone"      data-msg="📱 잠깐 폰만!">📱 핸폰 보는 중</div>
+      <div class="status-opt" data-s="hungry"     data-msg="🍕 꼬르륵...">🤤 배고프다</div>
+      <div class="status-opt" data-s="zoning"     data-msg="🫠 뇌 정지 옴">😶‍🌫️ 멍때리는 중</div>
+      <div class="status-opt" data-s="goinghome"  data-msg="🎒 가방 싸는 중">🏃 집에 갈 준비중</div>
+      <button class="status-close" id="status-close">취소</button>
+    </div>
+  </div>
+
+  <!-- 리더보드 -->
+  <div id="lb-overlay">
+    <div class="lb-inner">
+      <div class="lb-title-area">
+        <div class="lb-main-title">🏆 이번 주 공부왕</div>
+        <div class="lb-period-badge" id="lb-period-badge">기간 로딩 중...</div>
+      </div>
+      <div id="lb-list"><div class="lb-empty">로딩 중...</div></div>
+      <button class="lb-close-btn" id="lb-close">닫기</button>
+    </div>
+  </div>
+
+  <div id="bottom-nav">
+    <div class="big-btn" id="nav-bgm"><span class="icon">🎵</span><span>MUSIC</span></div>
+    <div class="big-btn" id="nav-status"><span class="icon">💬</span><span>나는 지금</span></div>
+    <div class="big-btn" id="nav-lb"><span class="icon">🏆</span><span>이주의 공부왕</span></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove, onDisconnect, update, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCT5RnyrKhXK6ymNj_z7QInNaoCOvqt0lY",
+  authDomain: "karona-studyroom-test1.firebaseapp.com",
+  databaseURL: "https://karona-studyroom-test1-default-rtdb.firebaseio.com",
+  projectId: "karona-studyroom-test1",
+  storageBucket: "karona-studyroom-test1.firebasestorage.app",
+  messagingSenderId: "251667666632",
+  appId: "1:251667666632:web:bc524ca9008aff394b77fd"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== 텔레그램 =====
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready(); tg.expand();
+  tg.setHeaderColor('#1e1c14'); tg.setBackgroundColor('#1e1c14');
+  if (tg.viewportHeight) document.documentElement.style.setProperty('--tg-viewport-height', tg.viewportHeight+'px');
+  tg.onEvent('viewportChanged', () => {
+    document.documentElement.style.setProperty('--tg-viewport-height', tg.viewportHeight+'px');
+  });
+}
+const myUserId = tg?.initDataUnsafe?.user?.id ? 'tg_'+tg.initDataUnsafe.user.id : 'u_'+Date.now();
+const myName = tg?.initDataUnsafe?.user?.first_name || '손님';
+const CHARS = ['🧑‍💻','👩‍🎓','🧑‍🎓','🐱','🐼','🦊','🐸','🐨'];
+const myChar = CHARS[Math.floor(Math.random()*CHARS.length)];
+
+// ===== WakeLock =====
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch(e) {}
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+});
+document.addEventListener('click', () => { if(!wakeLock) requestWakeLock(); }, {once:true});
+
+// ===== 효과음 (Web Audio API) =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+function getACtx() { if(!actx) actx = new AudioCtx(); return actx; }
+
+function playWipeSound() {
+  try {
+    const ctx = getACtx();
+    const buf = ctx.createBuffer(1, ctx.sampleRate*0.35, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length)*0.1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2800; f.Q.value=0.6;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.35);
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+  } catch(e){}
+}
+function playWriteSound() {
+  try {
+    const ctx = getACtx();
+    [880,1050].forEach((freq,i) => {
+      setTimeout(() => {
+        try {
+          const o=ctx.createOscillator(), g=ctx.createGain();
+          o.type='sine'; o.frequency.setValueAtTime(freq,ctx.currentTime); o.frequency.linearRampToValueAtTime(freq*1.3,ctx.currentTime+0.08);
+          g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.08,ctx.currentTime+0.02); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.12);
+          o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.12);
+        } catch(e){}
+      }, i*110);
+    });
+  } catch(e){}
+}
+
+// ===== TTS — Web Speech API (앱 내 재생) =====
+let ttsUtterance = null;
+function speakKhmer(text) {
+  if (!text || text === '...') return;
+  // 진행 중이면 중지
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    document.getElementById('sound-icon').classList.remove('playing');
+    return;
+  }
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'km-KH'; // 크메르어
+  utter.rate = 0.85;
+  utter.pitch = 1.0;
+
+  // 크메르어 목소리 찾기
+  const voices = window.speechSynthesis.getVoices();
+  const khmerVoice = voices.find(v => v.lang.startsWith('km') || v.lang.includes('KH'));
+  if (khmerVoice) utter.voice = khmerVoice;
+
+  const icon = document.getElementById('sound-icon');
+  icon.classList.add('playing');
+  utter.onend = () => icon.classList.remove('playing');
+  utter.onerror = () => icon.classList.remove('playing');
+
+  window.speechSynthesis.speak(utter);
+  ttsUtterance = utter;
+
+  // 햅틱 피드백
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+document.getElementById('btn-tts').addEventListener('click', () => {
+  const text = document.getElementById('word-kh').textContent;
+  speakKhmer(text);
+});
+
+// ===== 단어 — Firebase 연동, 1분 주기 =====
+let WORD_LIST = [], wordIdx = -1;
+
+get(ref(db,'words/set1')).then(snap => {
+  if (snap.exists()) {
+    const data = snap.val();
+    WORD_LIST = (Array.isArray(data) ? data : Object.values(data)).filter(w => w?.kh && w?.kr);
+    syncWord();
+    setInterval(syncWord, 5000); // 5초마다 체크 (1분 주기 감지)
+  }
+});
+
+function syncWord() {
+  if (!WORD_LIST.length) return;
+  const newIdx = Math.floor(Date.now() / 60000) % WORD_LIST.length; // 1분마다
+  if (newIdx === wordIdx) return;
+
+  const kh = document.getElementById('word-kh');
+  const kr = document.getElementById('word-kr');
+
+  if (wordIdx === -1) {
+    // 최초 로드
+    wordIdx = newIdx;
+    kh.textContent = WORD_LIST[wordIdx].kh;
+    kr.textContent = WORD_LIST[wordIdx].kr;
+    return;
+  }
+
+  // 와이프 애니메이션
+  wordIdx = newIdx;
+  const overlay = document.getElementById('wipe-overlay');
+  playWipeSound();
+  overlay.classList.remove('wiping'); void overlay.offsetWidth; overlay.classList.add('wiping');
+  setTimeout(() => {
+    kh.classList.remove('chalk-write'); kr.classList.remove('chalk-write');
+    void kh.offsetWidth;
+    kh.textContent = WORD_LIST[wordIdx].kh;
+    kr.textContent = WORD_LIST[wordIdx].kr;
+    kh.classList.add('chalk-write'); kr.classList.add('chalk-write');
+    playWriteSound();
+    // 진행 중인 TTS 중지
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      document.getElementById('sound-icon').classList.remove('playing');
+    }
+  }, 620);
+  setTimeout(() => overlay.classList.remove('wiping'), 1300);
+}
+
+// ===== 8자리 배치 =====
+const SEAT_POS = [
+  { top:'8%',  left:'8%'  },
+  { top:'8%',  right:'8%' },
+  { top:'34%', left:'4%'  },
+  { top:'34%', right:'4%' },
+  { bottom:'26%', left:'6%'  },
+  { bottom:'26%', right:'6%' },
+  { bottom:'8%',  left:'15%' },
+  { bottom:'8%',  right:'15%'},
+];
+
+const STATUS_ICONS = {
+  studying:'📖', distracted:'🙈', dozing:'😴',
+  phone:'📱', hungry:'🤤', zoning:'😶‍🌫️', goinghome:'🏃'
+};
+
+let seats = {}, mySeatRef = null;
+
+function fmtTime(ms) {
+  const mins = Math.floor((Date.now()-ms)/60000);
+  if (mins < 1) return '방금';
+  if (mins < 60) return `${mins}분`;
+  return `${Math.floor(mins/60)}시간 ${mins%60}분`;
+}
+
+function renderSeats() {
+  const area = document.getElementById('tables-area');
+  area.innerHTML = ''; let count = 0;
+  SEAT_POS.forEach((pos, i) => {
+    const key='seat_'+i, user=seats[key], isMe=user&&user.userId===myUserId;
+    if (user) count++;
+    const spot = document.createElement('div');
+    spot.className = 'table-spot';
+    Object.assign(spot.style, pos);
+    if (user) {
+      const si = STATUS_ICONS[user.status] || '📖';
+      let bubbleHtml = '';
+      if (user.statusTime && (Date.now()-user.statusTime < 10000)) {
+        bubbleHtml = `<div class="speech-bubble">${user.statusMsg}</div>`;
+        setTimeout(renderSeats, 10000-(Date.now()-user.statusTime));
+      }
+      const tc = isMe ? 'mine' : '';
+      spot.innerHTML = `
+        <div class="seat-wrap">
+          ${bubbleHtml}
+          <span class="seat-char">${user.char}</span>
+          <span class="status-badge">${si}</span>
+        </div>
+        <div class="table-surface ${tc}"></div>
+        <div class="table-legs"><div class="table-leg"></div><div class="table-leg"></div></div>
+        <div class="chair-back ${tc}"></div>
+        <div class="chair-seat ${tc}"></div>
+        <div class="seat-info">
+          <div class="seat-name">${user.name}</div>
+          <div class="seat-timer">⏱ ${fmtTime(user.joinedAt)}</div>
+        </div>`;
+      if (isMe) {
+        spot.querySelector('.seat-wrap').addEventListener('click', e => {
+          e.stopPropagation();
+          document.getElementById('status-overlay').classList.add('open');
+        });
+      }
+    } else {
+      spot.innerHTML = `
+        <div class="seat-wrap" style="opacity:0.25"><span class="seat-char">🪑</span></div>
+        <div class="table-surface"></div>
+        <div class="table-legs"><div class="table-leg"></div><div class="table-leg"></div></div>
+        <div class="chair-back"></div><div class="chair-seat"></div>
+        <div class="empty-hint">비었음</div>`;
+      spot.querySelector('.empty-hint').addEventListener('click', () => takeSeat(i, key));
+    }
+    area.appendChild(spot);
+  });
+  document.getElementById('cnt').textContent = count;
+}
+
+function takeSeat(i, key) {
+  if (Object.values(seats).some(s => s.userId===myUserId)) return;
+  mySeatRef = ref(db,'seats/'+key);
+  set(mySeatRef, {userId:myUserId,name:myName,char:myChar,joinedAt:Date.now(),status:'studying',statusMsg:'',statusTime:0});
+  onDisconnect(mySeatRef).remove();
+  requestWakeLock();
+}
+
+onValue(ref(db,'seats'), snap => { seats=snap.val()||{}; renderSeats(); });
+setInterval(renderSeats, 10000);
+
+// ===== 상태 변경 =====
+document.getElementById('nav-status').addEventListener('click', () => {
+  if (!mySeatRef) return;
+  document.getElementById('status-overlay').classList.add('open');
+});
+document.getElementById('status-close').addEventListener('click', () => {
+  document.getElementById('status-overlay').classList.remove('open');
+});
+document.querySelectorAll('.status-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    if (mySeatRef) update(mySeatRef, {status:opt.dataset.s, statusMsg:opt.dataset.msg, statusTime:Date.now()});
+    document.getElementById('status-overlay').classList.remove('open');
+  });
+});
+
+// ===== 리더보드 =====
+function getWeekInfo() {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day===0?6:day-1));
+  monday.setHours(0,0,0,0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  const key = `week_${monday.getFullYear()}_${String(monday.getMonth()+1).padStart(2,'0')}_${String(monday.getDate()).padStart(2,'0')}`;
+  const fmt = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  return { key, range: `${fmt(monday)} ~ ${fmt(sunday)}` };
+}
+const { key: weekKey, range: weekRange } = getWeekInfo();
+
+// 1분마다 공부시간 누적
+setInterval(async () => {
+  if (!mySeatRef) return;
+  const userRef = ref(db,`leaderboard/${weekKey}/${myUserId}`);
+  try {
+    const snap = await get(userRef);
+    const data = snap.val() || {name:myName,char:myChar,minutes:0};
+    await set(userRef, {name:myName,char:myChar,minutes:data.minutes+1});
+  } catch(e){}
+}, 60000);
+
+async function loadLeaderboard() {
+  document.getElementById('lb-period-badge').textContent = weekRange;
+  const snap = await get(ref(db,`leaderboard/${weekKey}`));
+  const data = snap.val();
+  if (!data) {
+    document.getElementById('lb-list').innerHTML = '<div class="lb-empty">이번 주 기록이 아직 없습니다 ☕</div>';
+    return;
+  }
+  const list = Object.values(data).sort((a,b)=>b.minutes-a.minutes).slice(0,10);
+  const badges = ['🥇','🥈','🥉'];
+  document.getElementById('lb-list').innerHTML = list.map((u,i) => {
+    const h = Math.floor(u.minutes/60), m = u.minutes%60;
+    const timeStr = h>0 ? `${h}h ${m}m` : `${m}분`;
+    return `<div class="lb-row">
+      <div class="lb-rank">${badges[i]||`${i+1}위`}</div>
+      <div class="lb-user">${u.char} <span>${u.name}</span></div>
+      <div class="lb-time">${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('nav-lb').addEventListener('click', () => {
+  document.getElementById('lb-overlay').classList.add('open');
+  loadLeaderboard();
+});
+document.getElementById('lb-close').addEventListener('click', () => {
+  document.getElementById('lb-overlay').classList.remove('open');
+});
+
+// ===== BGM =====
+let bgmOn = false;
+const audio = new Audio('small_desk.mp3'); audio.loop = true;
+document.getElementById('nav-bgm').addEventListener('click', function() {
+  if (!bgmOn) { audio.play().catch(()=>{}); this.classList.add('on'); bgmOn=true; }
+  else { audio.pause(); this.classList.remove('on'); bgmOn=false; }
+});
+
+// ===== 지나가는 강아지 (바닥만, 3~5분마다) =====
+const WALKERS = ['🐕','🐈','🐕‍🦺'];
+let occupiedSeats = () => Object.values(seats).filter(s=>s);
+
+function spawnWalker() {
+  const floor = document.getElementById('cafe-floor');
+  const floorH = floor.clientHeight;
+  const el = document.createElement('div');
+  const rtl = Math.random() > 0.5;
+  const dur = 12 + Math.random()*8; // 느리게 — 12~20초
+  el.className = 'walker';
+  el.textContent = WALKERS[Math.floor(Math.random()*WALKERS.length)];
+  el.style.bottom = (10 + Math.floor(Math.random()*12)) + 'px'; // 바닥 근처만
+  el.style.fontSize = (16 + Math.floor(Math.random()*5)) + 'px';
+
+  // 가끔 (30%) 사람에게 다가가기
+  const doApproach = Math.random() < 0.3 && occupiedSeats().length > 0;
+  if (doApproach) {
+    const targetX = Math.floor(Math.random() * (window.innerWidth * 0.4) + window.innerWidth * 0.3);
+    el.style.setProperty('--target-x', targetX+'px');
+    el.style.animationName = 'approachAndLeave';
+    el.style.animationDuration = (dur*1.3)+'s';
+    el.style.animationTimingFunction = 'ease-in-out';
+    el.style.animationFillMode = 'forwards';
+  } else {
+    el.style.animationName = rtl ? 'walkR2L' : 'walkL2R';
+    el.style.animationDuration = dur+'s';
+    el.style.animationTimingFunction = 'linear';
+    el.style.animationFillMode = 'forwards';
+  }
+  floor.appendChild(el);
+  setTimeout(() => el.remove(), (dur*1.5+1)*1000);
+}
+
+function scheduleWalker() {
+  spawnWalker();
+  setTimeout(scheduleWalker, 180000 + Math.random()*120000); // 3~5분
+}
+setTimeout(scheduleWalker, 15000);
+
+// ===== 종료 처리 =====
+window.addEventListener('pagehide', () => { if(mySeatRef) remove(mySeatRef); });
+window.addEventListener('unload', () => { if(mySeatRef) remove(mySeatRef); });
+if(tg) tg.onEvent('popupClosed', () => { if(mySeatRef) remove(mySeatRef); });
+</script>
+</body>
+</html>

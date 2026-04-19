@@ -257,7 +257,6 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
         <div id="wipe-overlay"></div>
         <button class="kh-clickable" id="btn-tts">
           <span id="word-kh" class="chalk-write">...</span>
-          <span class="sound-icon" id="sound-icon">🔊</span>
         </button>
         <div id="word-kr" class="chalk-write">동기화 중...</div>
         <div class="board-sub">1분마다 새로운 단어</div>
@@ -298,6 +297,25 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
     <div class="big-btn" id="nav-bgm"><span class="icon">🎵</span><span>MUSIC</span></div>
     <div class="big-btn" id="nav-status"><span class="icon">💬</span><span>나는 지금</span></div>
     <div class="big-btn" id="nav-lb"><span class="icon">🏆</span><span>이주의 공부왕</span></div>
+    <div class="big-btn" id="nav-credit"><span class="icon">☕</span><span>Credit</span></div>
+  </div>
+
+  <!-- 크레딧 오버레이 -->
+  <div id="credit-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:200;flex-direction:column;align-items:center;justify-content:center;">
+    <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.15);border-radius:20px;padding:30px 28px;width:82%;max-width:300px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="font-size:32px">☕</div>
+      <div style="font-size:16px;font-weight:bold;color:#f0ddb0;text-align:center;">까로나 공부방</div>
+      <div style="font-size:13px;color:#c8b878;text-align:center;line-height:1.8;">
+        이용해 주셔서 감사합니다 🙏<br>
+        <br>
+        <span style="color:rgba(200,180,120,0.6);font-size:12px;">만든 사람</span><br>
+        <span style="color:#f0ddb0;font-weight:bold;">Karona</span>
+      </div>
+      <a id="credit-contact" href="https://t.me/camkarona" style="display:flex;align-items:center;gap:8px;background:rgba(100,160,220,0.15);border:1px solid rgba(100,160,220,0.3);border-radius:12px;padding:10px 20px;color:#90c8f0;font-size:13px;font-weight:bold;text-decoration:none;">
+        💬 @camkarona 문의하기
+      </a>
+      <button id="credit-close" style="width:100%;padding:11px;border:none;border-radius:12px;background:rgba(255,255,255,0.07);color:#c8b878;font-weight:bold;font-size:14px;cursor:pointer;">닫기</button>
+    </div>
   </div>
 </div>
 
@@ -624,7 +642,17 @@ document.getElementById('lb-close').addEventListener('click', () => {
   document.getElementById('lb-overlay').classList.remove('open');
 });
 
-// ===== BGM =====
+// ===== 크레딧 =====
+document.getElementById('nav-credit').addEventListener('click', () => {
+  const ov = document.getElementById('credit-overlay');
+  ov.style.display = 'flex';
+});
+document.getElementById('credit-close').addEventListener('click', () => {
+  document.getElementById('credit-overlay').style.display = 'none';
+});
+document.getElementById('credit-contact').addEventListener('click', (e) => {
+  if (tg) { e.preventDefault(); tg.openTelegramLink('https://t.me/camkarona'); }
+});
 let bgmOn = false;
 const audio = new Audio('small_desk.mp3'); audio.loop = true;
 document.getElementById('nav-bgm').addEventListener('click', function() {

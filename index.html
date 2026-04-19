@@ -7,7 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Khmer+OS+Battambang&family=Nanum+Brush+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Khmer+OS+Battambang&family=Noto+Sans+KR:wght@400;700&family=Nanum+Brush+Script&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
@@ -45,6 +45,16 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 .online-badge { font-size:12px; color:#c8b878; display:flex; align-items:center; gap:5px; background:rgba(255,220,100,0.1); padding:4px 10px; border-radius:15px; font-weight:bold; }
 .dot { width:7px; height:7px; background:#7ed97e; border-radius:50%; animation:pulse 2s infinite; }
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* 칠판 위 감성 문구 */
+#board-tagline {
+  font-family: 'Nanum Brush Script', 'Noto Sans KR', cursive;
+  font-size: 14px; color: rgba(220,200,150,0.55);
+  text-align: center; line-height: 1.7;
+  margin-bottom: 8px; letter-spacing: 0.3px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
 
 /* 칠판 — 중앙 고정 */
 #center-board-area {
@@ -98,12 +108,12 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 @keyframes soundPulse{0%{opacity:0.5;transform:scale(0.9)}100%{opacity:1;transform:scale(1.1)}}
 
 #word-kr {
-  font-family:'Nanum Brush Script','Nanum Freehand',cursive;
-  font-size:24px; color:#b8d0b8; transition:opacity 0.4s; margin-bottom:6px;
+  font-family:'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  font-size:18px; color:#b8d0b8; transition:opacity 0.4s; margin-bottom:6px;
 }
 .board-sub {
-  font-family:'Nanum Brush Script',cursive;
-  font-size:14px; color:rgba(160,200,160,0.4); margin-top:4px;
+  font-family:'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  font-size:11px; color:rgba(160,200,160,0.4); margin-top:4px;
 }
 
 /* 카페 공간 */
@@ -258,6 +268,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 
     <!-- 칠판 중앙 -->
     <div id="center-board-area">
+      <div id="board-tagline">조용히 음악을 들으며<br>크메르어 단어를 공부하세요</div>
       <div id="blackboard">
         <div id="wipe-overlay"></div>
         <button class="kh-clickable" id="btn-tts">
@@ -559,7 +570,9 @@ function renderSeats() {
         <div class="table-legs"><div class="table-leg"></div><div class="table-leg"></div></div>
         <div class="chair-back"></div><div class="chair-seat"></div>
         <div class="empty-hint">비었음</div>`;
-      spot.querySelector('.empty-hint').addEventListener('click', () => takeSeat(i, key));
+      // 빈 자리 — 전체 클릭 가능
+      spot.style.cursor = 'pointer';
+      spot.addEventListener('click', () => takeSeat(i, key));
     }
     area.appendChild(spot);
   });
@@ -567,7 +580,13 @@ function renderSeats() {
 }
 
 function takeSeat(i, key) {
-  if (Object.values(seats).some(s => s.userId===myUserId)) return;
+  // 이미 같은 자리면 무시
+  if (seats[key] && seats[key].userId === myUserId) return;
+  // 다른 자리에 앉아있으면 먼저 비우기
+  if (mySeatRef) {
+    remove(mySeatRef);
+    mySeatRef = null;
+  }
   mySeatRef = ref(db,'seats/'+key);
   set(mySeatRef, {userId:myUserId,name:myName,char:myChar,joinedAt:Date.now(),status:'studying',statusMsg:'',statusTime:0});
   onDisconnect(mySeatRef).remove();

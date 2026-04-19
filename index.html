@@ -51,9 +51,22 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
   font-family: 'Nanum Brush Script', 'Noto Sans KR', cursive;
   font-size: 14px; color: rgba(220,200,150,0.55);
   text-align: center; line-height: 1.7;
-  margin-bottom: 8px; letter-spacing: 0.3px;
+  margin-bottom: 6px; letter-spacing: 0.3px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.4);
   pointer-events: none;
+}
+/* 현재 재생 중 */
+#now-playing {
+  font-family: 'Nanum Brush Script', cursive;
+  font-size: 13px; color: rgba(240,220,160,0.5);
+  text-align: center; margin-bottom: 7px;
+  letter-spacing: 0.5px;
+  animation: nowPlayingBreath 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes nowPlayingBreath {
+  0%,100% { opacity: 0.3; }
+  50%      { opacity: 0.85; }
 }
 
 /* 칠판 — 중앙 고정 */
@@ -259,6 +272,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
     <!-- 칠판 중앙 -->
     <div id="center-board-area">
       <div id="board-tagline">조용히 음악을 들으며<br>크메르어 단어를 공부하세요</div>
+      <div id="now-playing">🎵 <span id="now-playing-title">-</span> 🎵</div>
       <div id="blackboard">
         <div id="wipe-overlay"></div>
         <button class="kh-clickable" id="btn-tts">
@@ -272,17 +286,31 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
     <div id="tables-area"></div>
   </div>
 
-  <!-- 상태 선택 -->
+  <!-- 상태/소통 선택 -->
   <div id="status-overlay">
     <div class="status-box">
-      <div class="status-title">지금 내 상태는?</div>
-      <div class="status-opt" data-s="studying"   data-msg="🔥 불타오르는 중!">📖 열공중</div>
-      <div class="status-opt" data-s="distracted" data-msg="👀 살짝 딴짓 중...">🙈 딴짓중</div>
-      <div class="status-opt" data-s="dozing"     data-msg="😪 꾸벅꾸벅...">😴 조는 중</div>
-      <div class="status-opt" data-s="phone"      data-msg="📱 잠깐 폰만!">📱 핸폰 보는 중</div>
-      <div class="status-opt" data-s="hungry"     data-msg="🍕 꼬르륵...">🤤 배고프다</div>
-      <div class="status-opt" data-s="zoning"     data-msg="🫠 뇌 정지 옴">😶‍🌫️ 멍때리는 중</div>
-      <div class="status-opt" data-s="goinghome"  data-msg="🎒 가방 싸는 중">🏃 집에 갈 준비중</div>
+      <!-- 탭 -->
+      <div style="display:flex;gap:0;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);">
+        <button id="tab-status" onclick="switchTab('status')" style="flex:1;padding:9px;border:none;background:rgba(255,220,100,0.18);color:#f0d878;font-weight:bold;font-size:13px;cursor:pointer;">상태</button>
+        <button id="tab-social" onclick="switchTab('social')" style="flex:1;padding:9px;border:none;background:rgba(255,255,255,0.04);color:rgba(200,180,120,0.6);font-weight:bold;font-size:13px;cursor:pointer;">소통</button>
+      </div>
+      <!-- 상태 탭 -->
+      <div id="panel-status">
+        <div class="status-opt" data-s="studying"   data-msg="🔥 불타오르는 중!">📖 열공중</div>
+        <div class="status-opt" data-s="distracted" data-msg="👀 살짝 딴짓 중...">🙈 딴짓중</div>
+        <div class="status-opt" data-s="dozing"     data-msg="😪 꾸벅꾸벅...">😴 조는 중</div>
+        <div class="status-opt" data-s="phone"      data-msg="📱 잠시 폰체크">📱 핸폰 보는 중</div>
+        <div class="status-opt" data-s="hungry"     data-msg="🍕 꼬르륵...">🤤 배고프다</div>
+        <div class="status-opt" data-s="zoning"     data-msg="🫠 뇌 정지 옴">😶‍🌫️ 멍때리는 중</div>
+        <div class="status-opt" data-s="goinghome"  data-msg="🎒 가방 싸는 중">🏃 집에 갈 준비중</div>
+      </div>
+      <!-- 소통 탭 -->
+      <div id="panel-social" style="display:none;">
+        <div class="status-opt social-opt" data-msg="👋 안녕하세요!">👋 안녕하세요</div>
+        <div class="status-opt social-opt" data-msg="😊 반가워요!">😊 반가워요</div>
+        <div class="status-opt social-opt" data-msg="📖 열공하세요!">📖 열공하세요</div>
+        <div class="status-opt social-opt" data-msg="🌟 좋은 하루~">🌟 좋은 하루~</div>
+      </div>
       <button class="status-close" id="status-close">취소</button>
     </div>
   </div>
@@ -300,25 +328,28 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
         <span style="font-size:14px;font-weight:bold;color:#f0d878;" id="lb-my-time">0시간 0분</span>
       </div>
       <div id="lb-list"><div class="lb-empty">로딩 중...</div></div>
+      <div style="font-size:11px;color:rgba(200,180,120,0.35);text-align:center;margin-top:14px;padding:0 4px;line-height:1.6;">
+        🔒 해금 캐릭터는 매주 월요일에 리셋됩니다
+      </div>
       <button class="lb-close-btn" id="lb-close">닫기</button>
     </div>
   </div>
 
   <div id="bottom-nav">
     <button class="big-btn" id="nav-bgm"><span class="icon">🎵</span><span>MUSIC</span></button>
-    <button class="big-btn" id="nav-status"><span class="icon">💬</span><span>나는 지금</span></button>
+    <button class="big-btn" id="nav-status"><span class="icon">💬</span><span>내 상태 / 소통</span></button>
     <button class="big-btn" id="nav-lb"><span class="icon">🏆</span><span>이주의 공부왕</span></button>
     <button class="big-btn" id="nav-credit"><span class="icon">☕</span><span>Credit</span></button>
   </div>
 
   <!-- 캐릭터 선택 모달 -->
-  <div id="char-modal" style="display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:16px;">
+  <div id="char-modal" style="display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
     <div style="background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:20px;padding:22px 18px;width:92%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:14px;">
       <div style="font-size:24px">☕</div>
       <div style="font-size:15px;font-weight:bold;color:#f0ddb0;">나의 캐릭터를 선택하세요</div>
       <!-- 기본 캐릭터 -->
       <div style="width:100%;">
-        <div style="font-size:11px;color:rgba(200,180,120,0.5);text-align:center;margin-bottom:8px;">기본 캐릭터</div>
+        <div style="font-size:11px;color:rgba(200,180,120,0.5);text-align:center;margin-bottom:8px;">✅ 기본 캐릭터</div>
         <div style="display:flex;gap:10px;justify-content:center;">
           <div class="char-pick" data-char="🧑‍💻" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);">
             <span style="font-size:32px">🧑‍💻</span><span style="font-size:10px;color:#c8b878;">남자</span>
@@ -333,30 +364,36 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
       </div>
       <!-- 2시간 해금 -->
       <div style="width:100%;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
-        <div style="font-size:11px;text-align:center;margin-bottom:8px;" id="unlock2-label" class="lock-label">🔒 2시간 이상 공부하면 해금</div>
+        <div style="font-size:11px;text-align:center;margin-bottom:8px;" id="unlock2-label" class="lock-label">🔒 2시간 공부하면 해금</div>
         <div style="display:flex;gap:10px;justify-content:center;">
-          <div class="char-pick char-lock2" data-char="🐱" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
-            <span style="font-size:32px">🐱</span><span style="font-size:10px;color:#888;">고양이</span>
-          </div>
-          <div class="char-pick char-lock2" data-char="🐶" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
+          <div class="char-pick char-lock2" data-char="🐶" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.35;">
             <span style="font-size:32px">🐶</span><span style="font-size:10px;color:#888;">강아지</span>
           </div>
-          <div class="char-pick char-lock2" data-char="🐼" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.4;">
-            <span style="font-size:32px">🐼</span><span style="font-size:10px;color:#888;">판다</span>
+          <div class="char-pick char-lock2" data-char="🐱" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);opacity:0.35;">
+            <span style="font-size:32px">🐱</span><span style="font-size:10px;color:#888;">고양이</span>
           </div>
         </div>
       </div>
       <!-- 4시간 해금 -->
       <div style="width:100%;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">
-        <div style="font-size:11px;text-align:center;margin-bottom:8px;" id="unlock4-label" class="lock-label">🔒 4시간 이상 공부하면 해금</div>
+        <div style="font-size:11px;text-align:center;margin-bottom:8px;" id="unlock4-label" class="lock-label">🔒 4시간 공부하면 해금</div>
         <div style="display:flex;gap:10px;justify-content:center;">
-          <div class="char-pick char-lock4" data-char="👑" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,200,50,0.08);background:rgba(255,200,50,0.02);opacity:0.4;">
-            <span style="font-size:32px">👑</span><span style="font-size:10px;color:#888;">왕</span>
-          </div>
-          <div class="char-pick char-lock4" data-char="🐯" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,200,50,0.08);background:rgba(255,200,50,0.02);opacity:0.4;">
+          <div class="char-pick char-lock4" data-char="🐯" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,180,50,0.08);background:rgba(255,180,50,0.02);opacity:0.35;">
             <span style="font-size:32px">🐯</span><span style="font-size:10px;color:#888;">호랑이</span>
           </div>
-          <div class="char-pick char-lock4" data-char="👽" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,200,50,0.08);background:rgba(255,200,50,0.02);opacity:0.4;">
+          <div class="char-pick char-lock4" data-char="🐼" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,180,50,0.08);background:rgba(255,180,50,0.02);opacity:0.35;">
+            <span style="font-size:32px">🐼</span><span style="font-size:10px;color:#888;">팬더</span>
+          </div>
+        </div>
+      </div>
+      <!-- 10시간 해금 -->
+      <div style="width:100%;border-top:1px solid rgba(255,220,80,0.1);padding-top:12px;">
+        <div style="font-size:11px;text-align:center;margin-bottom:8px;" id="unlock10-label" class="lock-label">🔒 10시간 공부하면 해금 ✨</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <div class="char-pick char-lock10" data-char="👑" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,220,50,0.1);background:rgba(255,220,50,0.03);opacity:0.35;">
+            <span style="font-size:32px">👑</span><span style="font-size:10px;color:#888;">왕</span>
+          </div>
+          <div class="char-pick char-lock10" data-char="👽" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 12px;border-radius:12px;border:2px solid rgba(255,220,50,0.1);background:rgba(255,220,50,0.03);opacity:0.35;">
             <span style="font-size:32px">👽</span><span style="font-size:10px;color:#888;">외계인</span>
           </div>
         </div>
@@ -436,52 +473,42 @@ let selectedChar = null;
 async function initCharModal() {
   const snap = await get(ref(db, `leaderboard/${getWeekInfo().key}/${myUserId}`));
   const myMinutes = snap.val()?.minutes || 0;
-  const unlock2 = myMinutes >= 120;  // 2시간
-  const unlock4 = myMinutes >= 240;  // 4시간
+  const unlock2  = myMinutes >= 120;
+  const unlock4  = myMinutes >= 240;
+  const unlock10 = myMinutes >= 600;
 
-  // 2시간 해금
-  if (unlock2) {
-    document.getElementById('unlock2-label').textContent = '🔓 2시간 해금 완료!';
-    document.getElementById('unlock2-label').style.color = 'rgba(100,220,100,0.7)';
-    document.querySelectorAll('.char-lock2').forEach(el => {
-      el.classList.remove('char-lock2');
+  function unlockTier(cls, labelId, text, color, border, bg) {
+    document.getElementById(labelId).textContent = text;
+    document.getElementById(labelId).style.color = color;
+    document.querySelectorAll('.'+cls).forEach(el => {
+      el.classList.remove(cls);
       el.style.opacity = '1';
-      el.style.borderColor = 'rgba(255,255,255,0.1)';
-      el.style.background = 'rgba(255,255,255,0.04)';
+      el.style.borderColor = border;
+      el.style.background = bg;
     });
-  } else {
-    document.getElementById('unlock2-label').style.color = 'rgba(200,180,120,0.4)';
   }
 
-  // 4시간 해금
-  if (unlock4) {
-    document.getElementById('unlock4-label').textContent = '🔓 4시간 해금 완료!';
-    document.getElementById('unlock4-label').style.color = 'rgba(255,200,50,0.8)';
-    document.querySelectorAll('.char-lock4').forEach(el => {
-      el.classList.remove('char-lock4');
-      el.style.opacity = '1';
-      el.style.borderColor = 'rgba(255,200,50,0.3)';
-      el.style.background = 'rgba(255,200,50,0.06)';
-    });
-  } else {
-    document.getElementById('unlock4-label').style.color = 'rgba(200,180,120,0.4)';
-  }
+  if (unlock2)  unlockTier('char-lock2',  'unlock2-label',  '🔓 2시간 해금 완료!',   'rgba(100,220,100,0.8)',  'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.06)');
+  else          document.getElementById('unlock2-label').style.color = 'rgba(200,180,120,0.45)';
+  if (unlock4)  unlockTier('char-lock4',  'unlock4-label',  '🔓 4시간 해금 완료!',   'rgba(255,180,60,0.9)',   'rgba(255,180,50,0.3)',   'rgba(255,180,50,0.08)');
+  else          document.getElementById('unlock4-label').style.color = 'rgba(200,180,120,0.45)';
+  if (unlock10) unlockTier('char-lock10', 'unlock10-label', '🔓 10시간 해금 완료! ✨','rgba(255,220,80,1.0)',   'rgba(255,220,50,0.4)',   'rgba(255,220,50,0.1)');
+  else          document.getElementById('unlock10-label').style.color = 'rgba(200,180,120,0.45)';
 
   document.querySelectorAll('.char-pick').forEach(el => {
     el.addEventListener('click', () => {
-      if (el.classList.contains('char-lock2') || el.classList.contains('char-lock4')) return;
+      if (el.classList.contains('char-lock2') || el.classList.contains('char-lock4') || el.classList.contains('char-lock10')) return;
       document.querySelectorAll('.char-pick').forEach(e => {
-        e.style.borderColor = e.classList.contains('char-lock4')
-          ? 'rgba(255,200,50,0.08)' : 'rgba(255,255,255,0.1)';
-        e.style.background = e.classList.contains('char-lock4')
-          ? 'rgba(255,200,50,0.02)' : 'rgba(255,255,255,0.04)';
+        if (!e.classList.contains('char-lock2') && !e.classList.contains('char-lock4') && !e.classList.contains('char-lock10')) {
+          e.style.borderColor = 'rgba(255,255,255,0.1)';
+          e.style.background  = 'rgba(255,255,255,0.04)';
+        }
       });
       el.style.borderColor = 'rgba(255,220,100,0.7)';
-      el.style.background = 'rgba(255,220,100,0.14)';
+      el.style.background  = 'rgba(255,220,100,0.14)';
       selectedChar = el.dataset.char;
       const btn = document.getElementById('char-confirm');
-      btn.disabled = false;
-      btn.style.opacity = '1';
+      btn.disabled = false; btn.style.opacity = '1';
     });
   });
 
@@ -837,11 +864,78 @@ document.getElementById('credit-close').addEventListener('click', () => {
 document.getElementById('credit-contact').addEventListener('click', (e) => {
   if (tg) { e.preventDefault(); tg.openTelegramLink('https://t.me/camkarona'); }
 });
-let bgmOn = false;
-const audio = new Audio('small_desk.mp3'); audio.loop = true;
+// ===== BGM 플레이리스트 =====
+const PLAYLIST = [
+  { title: 'Small Desk',  file: 'small_desk.mp3' },
+  { title: '뿌연 먼지',   file: 'dusty.mp3' },
+  // 곡 추가 시: { title: '제목', file: '파일명.mp3' } 형식으로 추가
+];
+let bgmOn = false, bgmIdx = 0;
+const audio = new Audio();
+audio.loop = true;
+
+function loadBGM(idx) {
+  const t = PLAYLIST[idx];
+  audio.src = t.file;
+  document.getElementById('now-playing-title').textContent = t.title;
+  if (bgmOn) audio.play().catch(()=>{});
+}
+
+// BGM 선택 팝업
+const bgmPopupHtml = `
+  <div id="bgm-popup" style="display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:14px;padding:12px;z-index:100;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+    ${PLAYLIST.map((t,i)=>`<div class="bgm-item" data-idx="${i}" style="padding:9px 14px;cursor:pointer;border-radius:8px;font-size:13px;color:#c8b878;display:flex;align-items:center;gap:8px;"><span>🎵</span><span>${i+1}. ${t.title}</span></div>`).join('')}
+  </div>`;
+document.getElementById('app').insertAdjacentHTML('beforeend', bgmPopupHtml);
+
+document.querySelectorAll('.bgm-item').forEach(item => {
+  item.addEventListener('click', () => {
+    bgmIdx = parseInt(item.dataset.idx);
+    loadBGM(bgmIdx);
+    bgmOn = true;
+    document.getElementById('nav-bgm').classList.add('on');
+    document.getElementById('bgm-popup').style.display = 'none';
+    audio.play().catch(()=>{});
+  });
+});
+
 document.getElementById('nav-bgm').addEventListener('click', function() {
-  if (!bgmOn) { audio.play().catch(()=>{}); this.classList.add('on'); bgmOn=true; }
-  else { audio.pause(); this.classList.remove('on'); bgmOn=false; }
+  const popup = document.getElementById('bgm-popup');
+  if (popup.style.display === 'none') {
+    popup.style.display = 'block';
+    // 팝업 외부 클릭 시 닫기
+    setTimeout(() => {
+      document.addEventListener('click', function closePopup(e) {
+        if (!popup.contains(e.target) && e.target !== document.getElementById('nav-bgm')) {
+          popup.style.display = 'none';
+        }
+        document.removeEventListener('click', closePopup);
+      });
+    }, 100);
+  } else {
+    popup.style.display = 'none';
+  }
+});
+
+loadBGM(0); // 첫 곡 로드
+
+// ===== 탭 전환 =====
+window.switchTab = function(tab) {
+  const isStatus = tab === 'status';
+  document.getElementById('panel-status').style.display = isStatus ? 'block' : 'none';
+  document.getElementById('panel-social').style.display = isStatus ? 'none'  : 'block';
+  document.getElementById('tab-status').style.background = isStatus ? 'rgba(255,220,100,0.18)' : 'rgba(255,255,255,0.04)';
+  document.getElementById('tab-status').style.color      = isStatus ? '#f0d878' : 'rgba(200,180,120,0.6)';
+  document.getElementById('tab-social').style.background = isStatus ? 'rgba(255,255,255,0.04)' : 'rgba(255,220,100,0.18)';
+  document.getElementById('tab-social').style.color      = isStatus ? 'rgba(200,180,120,0.6)' : '#f0d878';
+};
+
+// 소통 인사말 말풍선
+document.querySelectorAll('.social-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    if (mySeatRef) update(mySeatRef, { statusMsg: opt.dataset.msg, statusTime: Date.now() });
+    document.getElementById('status-overlay').classList.remove('open');
+  });
 });
 
 // ===== 지나가는 동물 v1.7 =====

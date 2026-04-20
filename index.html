@@ -145,9 +145,9 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 /* 창문 */
 .cafe-window {
   position:absolute; z-index:2;
-  background:linear-gradient(160deg,rgba(80,120,180,0.3),rgba(60,100,160,0.15));
   border:2.5px solid #9a7828; border-radius:4px 4px 0 0;
   box-shadow:inset 0 0 12px rgba(100,150,220,0.15),2px 2px 6px rgba(0,0,0,0.3);
+  transition: background 120s linear;
 }
 .wc-h{position:absolute;top:50%;left:0;right:0;height:1.5px;background:rgba(154,120,40,0.4)}
 .wc-v{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(154,120,40,0.4)}
@@ -751,6 +751,8 @@ function renderSeats() {
   document.getElementById('cnt').textContent = count;
 }
 
+let sessionJoinedAt = null; // 입장 시간 — 자리 바꿔도 유지
+
 function takeSeat(i, key) {
   const curSeats = getSeats();
   if (curSeats[key] && curSeats[key].userId === myUserId) return;
@@ -765,8 +767,10 @@ function takeSeat(i, key) {
   }
 
   if (mySeatRef) { remove(mySeatRef); mySeatRef = null; }
+  // 처음 앉을 때만 입장시간 기록, 자리 바꾸면 기존 시간 유지
+  if (!sessionJoinedAt) sessionJoinedAt = Date.now();
   mySeatRef = ref(db, getSeatsPath()+'/'+key);
-  set(mySeatRef, {userId:myUserId,name:myName,char:myChar,joinedAt:Date.now(),status:'studying',statusMsg:'',statusTime:0});
+  set(mySeatRef, {userId:myUserId,name:myName,char:myChar,joinedAt:sessionJoinedAt,status:'studying',statusMsg:'',statusTime:0});
   onDisconnect(mySeatRef).remove();
   requestWakeLock();
 }
@@ -885,6 +889,7 @@ function loadBGM(idx) {
 const bgmPopupHtml = `
   <div id="bgm-popup" style="display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:14px;padding:12px;z-index:100;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
     ${PLAYLIST.map((t,i)=>`<div class="bgm-item" data-idx="${i}" style="padding:9px 14px;cursor:pointer;border-radius:8px;font-size:13px;color:#c8b878;display:flex;align-items:center;gap:8px;"><span>🎵</span><span>${i+1}. ${t.title}</span></div>`).join('')}
+    <div id="bgm-off-btn" style="padding:9px 14px;cursor:pointer;border-radius:8px;font-size:13px;color:rgba(200,100,100,0.8);display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,0.07);margin-top:4px;"><span>⏹</span><span>음악 끄기</span></div>
   </div>`;
 document.getElementById('app').insertAdjacentHTML('beforeend', bgmPopupHtml);
 
@@ -899,11 +904,17 @@ document.querySelectorAll('.bgm-item').forEach(item => {
   });
 });
 
+document.getElementById('bgm-off-btn').addEventListener('click', () => {
+  bgmOn = false;
+  audio.pause();
+  document.getElementById('nav-bgm').classList.remove('on');
+  document.getElementById('bgm-popup').style.display = 'none';
+});
+
 document.getElementById('nav-bgm').addEventListener('click', function() {
   const popup = document.getElementById('bgm-popup');
   if (popup.style.display === 'none') {
     popup.style.display = 'block';
-    // 팝업 외부 클릭 시 닫기
     setTimeout(() => {
       document.addEventListener('click', function closePopup(e) {
         if (!popup.contains(e.target) && e.target !== document.getElementById('nav-bgm')) {
@@ -916,6 +927,40 @@ document.getElementById('nav-bgm').addEventListener('click', function() {
     popup.style.display = 'none';
   }
 });
+
+// ===== 창문 색상 — 캄보디아 시간 기준 (UTC+7) =====
+function updateWindowColor() {
+  const now = new Date();
+  const cambodiaHour = (now.getUTCHours() + 7) % 24;
+  const min = now.getUTCMinutes();
+  const t = cambodiaHour + min / 60; // 소수점 시간
+
+  let bg;
+  if (t >= 5 && t < 7) {
+    // 새벽 5~7시: 일출 — 주황/분홍
+    const p = (t - 5) / 2;
+    bg = `linear-gradient(180deg, rgba(${Math.round(80+120*p)},${Math.round(60+80*p)},${Math.round(120-60*p)},0.5), rgba(${Math.round(200+30*p)},${Math.round(120+60*p)},${Math.round(60)},0.3))`;
+  } else if (t >= 7 && t < 17) {
+    // 낮 7~17시: 맑은 하늘
+    bg = `linear-gradient(180deg, rgba(100,160,230,0.45), rgba(140,200,240,0.25))`;
+  } else if (t >= 17 && t < 19) {
+    // 저녁 17~19시: 노을 — 주황/붉음
+    const p = (t - 17) / 2;
+    bg = `linear-gradient(180deg, rgba(${Math.round(200+30*p)},${Math.round(100-60*p)},${Math.round(60-40*p)},0.5), rgba(${Math.round(240)},${Math.round(140-100*p)},${Math.round(40)},0.3))`;
+  } else if (t >= 19 && t < 20) {
+    // 땅거미 19~20시
+    bg = `linear-gradient(180deg, rgba(60,40,80,0.6), rgba(40,30,60,0.4))`;
+  } else {
+    // 밤 20~5시: 어두운 남색
+    bg = `linear-gradient(180deg, rgba(15,20,50,0.7), rgba(10,10,30,0.5))`;
+  }
+
+  document.querySelectorAll('.cafe-window').forEach(w => {
+    w.style.background = bg;
+  });
+}
+updateWindowColor();
+setInterval(updateWindowColor, 60000); // 1분마다 업데이트
 
 loadBGM(0); // 첫 곡 로드
 

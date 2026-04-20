@@ -13,7 +13,7 @@
 html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
 #app { width:100%; height:var(--tg-viewport-height,100vh); height:100dvh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
 #blackboard {
-    cursor: pointer !important;
+    cursor: pointer !important;window.addEventListener
     z-index: 10; /* 다른 요소에 가려지지 않게 함 */
 }
 /* 배경 — 은은하게 어두운 카페 */
@@ -275,7 +275,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 
     <!-- 칠판 중앙 -->
     <div id="center-board-area">
-      <div id="board-tagline">칠판을 누르면 단어집을 고를 수 있습니다</div>
+      <div id="board-tagline">칠판을 누르면 단어집을 고를 수 있는 기능 준비중 </div>
       <div id="now-playing">🎵 <span id="now-playing-title">-</span> 🎵</div>
       <div id="blackboard">
         <div id="wipe-overlay"></div>
@@ -300,12 +300,12 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
       </div>
       <!-- 상태 탭 -->
       <div id="panel-status">
-        <div class="status-opt" data-s="studying"   data-msg="🔥 불타오르는 중!">📖 열공중</div>
+        <div class="status-opt" data-s="studying"   data-msg="🔥 공부하자!">📖 열공중</div>
         <div class="status-opt" data-s="distracted" data-msg="👀 살짝 딴짓 중...">🙈 딴짓중</div>
         <div class="status-opt" data-s="dozing"     data-msg="😪 꾸벅꾸벅...">😴 조는 중</div>
         <div class="status-opt" data-s="phone"      data-msg="📱 잠시 폰체크">📱 핸폰 보는 중</div>
         <div class="status-opt" data-s="hungry"     data-msg="🍕 꼬르륵...">🤤 배고프다</div>
-        <div class="status-opt" data-s="zoning"     data-msg="🫠 뇌 정지 옴">😶‍🌫️ 멍때리는 중</div>
+        <div class="status-opt" data-s="zoning"     data-msg="🫠 멍때림">😶‍🌫️ 멍때리는 중</div>
         <div class="status-opt" data-s="goinghome"  data-msg="🎒 가방 싸는 중">🏃 집에 갈 준비중</div>
       </div>
       <!-- 소통 탭 -->

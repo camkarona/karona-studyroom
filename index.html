@@ -12,7 +12,10 @@
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
 #app { width:100%; height:var(--tg-viewport-height,100vh); height:100dvh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
-
+#blackboard {
+    cursor: pointer !important;
+    z-index: 10; /* 다른 요소에 가려지지 않게 함 */
+}
 /* 배경 — 은은하게 어두운 카페 */
 #bg-layer {
   position:absolute; inset:0; z-index:0;
@@ -72,7 +75,8 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 /* 칠판 — 중앙 고정 */
 #center-board-area {
   position:absolute; top:46%; left:50%; transform:translate(-50%,-50%);
-  z-index:5; display:flex; flex-direction:column; align-items:center;
+  z-index:20; /* 숫자를 높여서 테이블보다 위로 올립니다 */
+  display:flex; flex-direction:column; align-items:center;
   width:100%; pointer-events:none;
 }
 #blackboard {

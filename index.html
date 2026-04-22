@@ -987,7 +987,13 @@ document.getElementById('nav-notebook').addEventListener('click', async () => {
 document.getElementById('notebook-close').addEventListener('click', () => {
   document.getElementById('notebook-overlay').style.display = 'none';
 });
-
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(30,28,20,0.95);border:1px solid rgba(255,220,100,0.3);color:#f0ddb0;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:bold;z-index:9999;pointer-events:none;transition:opacity 0.4s;';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 400); }, 2000);
+}
 window.deleteWord = async function(kh) {
   try {
     await remove(ref(db, `user_notebooks/${myUserId}/${kh}`));
@@ -1076,9 +1082,9 @@ document.getElementById('save-word-btn').addEventListener('click', async () => {
     
     // 텔레그램 진동 알림
     if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    alert("내 공책에 저장되었습니다! 📓");
+  showToast("⭐ 내 공책에 저장되었습니다!");
   } catch (e) {
-    alert("저장 실패: 파이어베이스 설정을 확인하세요.");
+  showToast("저장 실패 😢");
   }
 });
 

@@ -988,6 +988,16 @@ document.getElementById('notebook-close').addEventListener('click', () => {
   document.getElementById('notebook-overlay').style.display = 'none';
 });
 
+window.deleteWord = async function(kh) {
+  try {
+    await remove(ref(db, `user_notebooks/${myUserId}/${kh}`));
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    await loadNotebook(); // 목록 새로고침
+  } catch(e) {
+    alert('삭제 실패 😢');
+  }
+};
+
 async function loadNotebook() {
   const list = document.getElementById('notebook-list');
   list.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(200,180,120,0.3);font-size:14px;">로딩 중...</div>';
@@ -1000,9 +1010,12 @@ async function loadNotebook() {
     }
     const words = Object.values(data).sort((a, b) => b.savedAt - a.savedAt);
     list.innerHTML = words.map(w => `
-      <div style="background:rgba(255,220,100,0.06);border:1px solid rgba(255,220,100,0.12);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;">
-        <div style="font-family:'Khmer OS Battambang',sans-serif;font-size:22px;color:#f0ecd8;">${w.kh}</div>
-        <div style="font-size:13px;color:#b8d0b8;">${w.kr}</div>
+      <div style="background:rgba(255,220,100,0.06);border:1px solid rgba(255,220,100,0.12);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-family:'Khmer OS Battambang',sans-serif;font-size:22px;color:#f0ecd8;">${w.kh}</div>
+          <div style="font-size:13px;color:#b8d0b8;">${w.kr}</div>
+        </div>
+        <button onclick="deleteWord('${w.kh}')" style="-webkit-appearance:none;appearance:none;background:rgba(200,80,80,0.15);border:1px solid rgba(200,80,80,0.25);border-radius:8px;padding:6px 10px;color:rgba(220,120,120,0.8);font-size:12px;cursor:pointer;touch-action:manipulation;flex-shrink:0;">🗑️ 삭제</button>
       </div>
     `).join('');
   } catch(e) {

@@ -51,11 +51,16 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 
 /* 칠판 위 감성 문구 */
 #board-tagline {
-  font-family: 'Nanum Brush Script', 'Noto Sans KR', cursive;
-  font-size: 14px; color: rgba(220,200,150,0.55);
-  text-align: center; line-height: 1.7;
-  margin-bottom: 6px; letter-spacing: 0.3px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  /* 맑은 고딕을 최우선으로 설정 */
+  font-family: 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', sans-serif;
+  font-size: 13px; /* 정갈하게 보이도록 살짝 크기 조정 */
+  font-weight: 500; /* 너무 가늘지 않게 적당한 두께감 */
+  color: rgba(240, 225, 180, 0.7); /* 가독성을 위해 색상을 조금 더 선명하게 조정 */
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px; /* 고딕 계열은 자간을 살짝 좁히면 더 정갈해 보입니다 */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   pointer-events: none;
 }
 /* 현재 재생 중 */

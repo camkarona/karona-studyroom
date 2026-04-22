@@ -196,28 +196,32 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 .walker { position:absolute; z-index:4; pointer-events:none; font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); will-change:left; }
 
 /* 하단 버튼 */
-#bottom-nav {
-  position:relative; z-index:10;
-  background:rgba(20,18,12,0.95);
-  padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
-  display:flex; gap:10px;
-  border-top:1px solid rgba(255,220,100,0.08);
-  flex-shrink:0;
+/* 상단 네비게이션으로 변경 */
+#top-nav {
+  position: relative; z-index: 100;
+  background: rgba(20, 18, 12, 0.95);
+  display: flex; gap: 8px; padding: 10px;
+  border-bottom: 1px solid rgba(255, 220, 100, 0.1);
 }
-.big-btn {
-  -webkit-appearance:none; appearance:none;
-  flex:1; display:flex; flex-direction:column; align-items:center;
-  padding:10px 0; background:rgba(255,255,255,0.05);
-  border:1.5px solid rgba(255,255,255,0.1); border-radius:14px;
-  color:#c8b878; font-weight:bold; font-size:12px; gap:4px; cursor:pointer;
-  transition:background 0.15s, transform 0.1s;
-  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  font-family:inherit;
-}
-.big-btn:active { transform:scale(0.95); background:rgba(255,255,255,0.12); }
-.big-btn.on { background:rgba(255,220,100,0.15); border-color:rgba(255,220,100,0.3); color:#f0d878; }
-.big-btn .icon { font-size:18px; }
 
+.nav-btn {
+  flex: 1; padding: 8px 0; background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  color: #c8b878; font-size: 11px; font-weight: bold; cursor: pointer;
+}
+
+.nav-btn.on { background: rgba(255, 220, 100, 0.15); border-color: #f0d878; color: #f0d878; }
+
+/* 칠판 내 별 버튼 */
+#save-word-btn {
+  position: absolute; bottom: 8px; right: 10px;
+  background: none; border: none; font-size: 22px;
+  cursor: pointer; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+  z-index: 15; transition: transform 0.1s;
+}
+#save-word-btn:active { transform: scale(1.3); }
+
+    
 /* 말풍선 */
 .speech-bubble {
   position:absolute; top:-42px; left:50%; transform:translateX(-50%);
@@ -256,6 +260,15 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 </style>
 </head>
 <body>
+<div id="top-nav">
+  <button class="nav-btn" id="nav-bgm">🎵 음악</button>
+  <button class="nav-btn" id="nav-lesson">🗣️ 강의</button>
+  <button class="nav-btn" id="nav-notebook">📓 내 공책</button>
+  <button class="nav-btn" id="nav-lb">🏆 랭킹</button>
+  <button class="nav-btn" id="nav-credit">☕ 정보</button>
+</div>
+
+    
 <div id="app">
   <div id="bg-layer"></div>
 
@@ -290,6 +303,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
         <div id="word-kr" class="chalk-write">동기화 중...</div>
         <div class="board-sub">1분마다 새로운 단어</div>
       </div>
+           <button id="save-word-btn" title="내 공책에 저장">⭐</button>
     </div>
 
     <div id="tables-area"></div>
@@ -344,12 +358,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
     </div>
   </div>
 
-  <div id="bottom-nav">
-    <button class="big-btn" id="nav-bgm"><span class="icon">🎵</span><span>MUSIC</span></button>
-    <button class="big-btn" id="nav-status"><span class="icon">💬</span><span>내 상태 / 소통</span></button>
-    <button class="big-btn" id="nav-lb"><span class="icon">🏆</span><span>이주의 공부왕</span></button>
-    <button class="big-btn" id="nav-credit"><span class="icon">☕</span><span>Credit</span></button>
-  </div>
+
 
   <!-- 캐릭터 선택 모달 -->
   <div id="char-modal" style="display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.88);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
@@ -956,6 +965,57 @@ document.getElementById('credit-close').addEventListener('click', () => {
 document.getElementById('credit-contact').addEventListener('click', (e) => {
   if (tg) { e.preventDefault(); tg.openTelegramLink('https://t.me/camkarona'); }
 });
+
+// ===== 강의 플레이리스트 =====
+const LESSON_LIST = [
+  { title: '레슨 1: 기초 회화', file: 'lesson1.mp3', boardText: '주제: 첫 만남 인사\n핵심: 안녕하세요, 감사합니다' }
+];
+
+let audioMode = 'music'; // 'music' 또는 'lesson'
+
+// 강의 재생 함수
+window.playLesson = function(idx) {
+  audioMode = 'lesson';
+  audio.pause(); 
+  const lesson = LESSON_LIST[idx];
+  audio.src = lesson.file;
+  
+  // 칠판 내용 강의 전용으로 변경
+  document.getElementById('word-kh').textContent = "LECTURE";
+  document.getElementById('word-kr').textContent = lesson.boardText;
+  document.getElementById('now-playing-title').textContent = lesson.title;
+  
+  audio.play();
+  document.getElementById('nav-lesson').classList.add('on');
+  document.getElementById('nav-bgm').classList.remove('on');
+};
+
+// 단어 저장 기능 (Firebase 연동)
+document.getElementById('save-word-btn').addEventListener('click', async () => {
+  if (audioMode === 'lesson') {
+    alert("강의 중에는 단어를 저장할 수 없습니다.");
+    return;
+  }
+  
+  const kh = document.getElementById('word-kh').textContent;
+  const kr = document.getElementById('word-kr').textContent;
+  
+  if (kh === "..." || kh === "준비중") return;
+
+  try {
+    const saveRef = ref(db, `user_notebooks/${myUserId}/${kh}`);
+    await set(saveRef, { kh, kr, savedAt: Date.now() });
+    
+    // 텔레그램 진동 알림
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    alert("내 공책에 저장되었습니다! 📓");
+  } catch (e) {
+    alert("저장 실패: 파이어베이스 설정을 확인하세요.");
+  }
+});
+
+
+    
 // ===== BGM 플레이리스트 =====
 const PLAYLIST = [
   { title: 'Small Desk',  file: 'small_desk.mp3' },

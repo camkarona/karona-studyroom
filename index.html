@@ -297,12 +297,19 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
         <div class="board-sub">1분마다 새로운 단어</div>
       </div>
       <!-- 별 버튼 — 칠판 바깥 아래 -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;pointer-events:auto;">
-        <button id="save-word-btn" style="-webkit-appearance:none;appearance:none;background:none;border:none;font-size:20px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));transition:transform 0.1s;touch-action:manipulation;padding:4px;" title="내 공책에 저장">⭐</button>
-          <button id="skip-word-btn" style="-webkit-appearance:none;appearance:none;background:none;border:none;font-size:20px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));transition:transform 0.1s;touch-action:manipulation;padding:4px;" title="다음 단어">⏩</button>
-        <span style="font-size:10px;color:rgba(220,200,150,0.5);pointer-events:none;">별을 누르면 내 공책에 저장됩니다. 넘기기 버튼을 누르면 다음 단어로 넘어갑니다. </span>
-      </div>
-    </div>
+     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:12px;pointer-events:auto;">
+  <div style="display:flex;align-items:center;gap:18px;">
+    <button id="save-word-btn" style="background:none;border:none;font-size:22px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="내 공책에 저장">⭐</button>
+    <button id="prev-word-btn" style="background:none;border:none;font-size:22px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="이전 단어">⏪</button>
+    <button id="pause-word-btn" style="background:none;border:none;font-size:22px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="멈춤/재생">⏸️</button>
+    <button id="skip-word-btn" style="background:none;border:none;font-size:22px;cursor:pointer;filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));" title="다음 단어">⏩</button>
+  </div>
+  
+  <div style="text-align:center;line-height:1.5;">
+    <div style="font-size:11px;color:rgba(220,200,150,0.7);">별을 누르면 내 공책에 저장됩니다.</div>
+    <div style="font-size:11px;color:rgba(220,200,150,0.7);"> 이 / 멈추기 / 넘기기 </div>
+  </div>
+</div>
 
     <div id="tables-area"></div>
   </div>
@@ -697,6 +704,7 @@ document.getElementById('btn-tts').addEventListener('click', () => {
 // ===== 단어 — Firebase 연동, 1분 주기 =====
 let WORD_LIST = [], wordIdx = -1, currentSet = 'set1';
 let localOffset = 0; // 수동으로 넘긴 횟수를 저장할 변수
+    let isPaused = false; // 멈춤 상태 확인용
 let wordSyncInterval = null;
 
 function loadWordSet(setKey) {
@@ -747,9 +755,15 @@ document.querySelectorAll('.wordset-item').forEach(item => {
 // 기본 set1 로드
 loadWordSet('set1');
 
-function syncWord() {
+function syncWord(isManual = false) {
   if (!WORD_LIST.length) return;
- const newIdx = (Math.floor(Date.now() / 60000) + localOffset) % WORD_LIST.length;
+  
+  // 멈춤 상태이고, 수동으로 버튼을 누른 게 아니라면(자동 실행이라면) 그냥 나감
+  if (isPaused && !isManual) return;
+
+  // 시간 기반 인덱스에 수동 넘김 횟수(localOffset)를 더합니다.
+  const newIdx = (Math.floor(Date.now() / 60000) + localOffset) % WORD_LIST.length;
+  
   if (newIdx === wordIdx) return;
 
   const kh = document.getElementById('word-kh');
@@ -763,7 +777,7 @@ function syncWord() {
     return;
   }
 
-  // 와이프 애니메이션
+  // 와이프 애니메이션 및 단어 교체
   wordIdx = newIdx;
   const overlay = document.getElementById('wipe-overlay');
   playWipeSound();
@@ -775,6 +789,7 @@ function syncWord() {
     kr.textContent = WORD_LIST[wordIdx].kr;
     kh.classList.add('chalk-write'); kr.classList.add('chalk-write');
     playWriteSound();
+    
     // 진행 중인 TTS 중지
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
@@ -783,7 +798,6 @@ function syncWord() {
   }, 620);
   setTimeout(() => overlay.classList.remove('wiping'), 1300);
 }
-
 // ===== 8자리 배치 =====
 const SEAT_POS = [
   { top:'8%',  left:'8%'  },
@@ -1223,7 +1237,36 @@ updateWindowColor();
 setInterval(updateWindowColor, 60000); // 1분마다 업데이트
 
 loadBGM(0); // 첫 곡 로드
+// [추가] 단어 제어 버튼 (이전, 멈춤, 다음) 동작 설정
+// 이전 단어 버튼
+document.getElementById('prev-word-btn').addEventListener('click', () => {
+  if (!WORD_LIST.length) return;
+  localOffset--; // 숫자를 줄여서 이전 단어로
+  syncWord(true); // true를 넣어 멈춤 상태라도 강제 실행
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+});
 
+// 멈춤/재생 버튼
+document.getElementById('pause-word-btn').addEventListener('click', function() {
+  isPaused = !isPaused; // 상태 반전
+  this.textContent = isPaused ? '▶️' : '⏸️'; // 아이콘 변경
+  
+  if (isPaused) {
+    showToast("자동 넘기기가 일시 정지되었습니다.");
+  } else {
+    showToast("자동 넘기기가 다시 시작됩니다.");
+    syncWord(); // 다시 시작할 때 즉시 동기화
+  }
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+});
+
+// 다음 단어 버튼
+document.getElementById('skip-word-btn').addEventListener('click', () => {
+  if (!WORD_LIST.length) return;
+  localOffset++;
+  syncWord(true); // 수동 실행임을 알림
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+});
 // ===== 탭 전환 =====
 window.switchTab = function(tab) {
   const isStatus = tab === 'status';

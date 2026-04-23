@@ -333,30 +333,28 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 
   <!-- 리더보드 -->
 <div id="lb-overlay">
-  <div class="lb-inner">
-    <button class="lb-close-btn" style="margin-top:0; margin-bottom:20px; background:rgba(255,255,255,0.1); font-size:13px;">← 공부방으로 돌아가기</button>
-    
-    <div class="lb-title-area">
-      <div class="lb-main-title">🏆 이번 주 공부왕</div>
-      <div class="lb-period-badge" id="lb-period-badge">기간 로딩 중...</div>
-    </div>
-    
-    <button class="lb-close-btn" id="lb-close">공부방으로 돌아가기</button>
-  </div>
-</div>
-      <!-- 나의 학습시간 -->
+    <div class="lb-inner">
+      <button class="lb-close-btn lb-close-trigger" style="margin-top:0; margin-bottom:20px; background:rgba(255,255,255,0.1); font-size:13px;">← 공부방으로 돌아가기</button>
+      
+      <div class="lb-title-area">
+        <div class="lb-main-title">🏆 이번 주 공부왕</div>
+        <div class="lb-period-badge" id="lb-period-badge">기간 로딩 중...</div>
+      </div>
+
       <div style="background:rgba(255,220,100,0.08);border:1px solid rgba(255,220,100,0.18);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:13px;color:#c8b878;">📚 나의 이번 주 학습시간</span>
         <span style="font-size:14px;font-weight:bold;color:#f0d878;" id="lb-my-time">0시간 0분</span>
       </div>
+
       <div id="lb-list"><div class="lb-empty">로딩 중...</div></div>
+
       <div style="font-size:14px; color:rgba(240,230,200,0.9); font-weight:bold;text-align:center;margin-top:14px;padding:0 4px;line-height:1.6;">
         🔒 해금 캐릭터와 리더보드는 매주 월요일에 리셋됩니다
       </div>
-      <button class="lb-close-btn" id="lb-close">닫기</button>
+
+      <button class="lb-close-btn lb-close-trigger" id="lb-close">공부방으로 돌아가기</button>
     </div>
   </div>
-
 
 
   <!-- 캐릭터 선택 모달 -->
@@ -978,8 +976,11 @@ document.getElementById('nav-lb').addEventListener('click', () => {
   document.getElementById('lb-overlay').classList.add('open');
   loadLeaderboard();
 });
-document.getElementById('lb-close').addEventListener('click', () => {
-  document.getElementById('lb-overlay').classList.remove('open');
+// 리더보드 닫기 버튼들 (상/하단 공통 적용)
+document.querySelectorAll('.lb-close-trigger').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('lb-overlay').classList.remove('open');
+  });
 });
 
 // ===== 크레딧 =====

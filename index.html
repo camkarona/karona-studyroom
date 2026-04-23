@@ -332,12 +332,18 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
   </div>
 
   <!-- 리더보드 -->
-  <div id="lb-overlay">
-    <div class="lb-inner">
-      <div class="lb-title-area">
-        <div class="lb-main-title">🏆 이번 주 공부왕</div>
-        <div class="lb-period-badge" id="lb-period-badge">기간 로딩 중...</div>
-      </div>
+<div id="lb-overlay">
+  <div class="lb-inner">
+    <button class="lb-close-btn" style="margin-top:0; margin-bottom:20px; background:rgba(255,255,255,0.1); font-size:13px;">← 공부방으로 돌아가기</button>
+    
+    <div class="lb-title-area">
+      <div class="lb-main-title">🏆 이번 주 공부왕</div>
+      <div class="lb-period-badge" id="lb-period-badge">기간 로딩 중...</div>
+    </div>
+    
+    <button class="lb-close-btn" id="lb-close">공부방으로 돌아가기</button>
+  </div>
+</div>
       <!-- 나의 학습시간 -->
       <div style="background:rgba(255,220,100,0.08);border:1px solid rgba(255,220,100,0.18);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:13px;color:#c8b878;">📚 나의 이번 주 학습시간</span>
@@ -1096,14 +1102,13 @@ const PLAYLIST = [
   { title: '뿌연 먼지',   file: 'dusty.mp3' },
   { title: '창문옆 피아노', file: 'windowpiano.mp3' },
   { title: '똔레쌉의 밤',  file: 'TonleSapnight.mp3' },
-{ title: '오늘 밤하늘엔 달이 보일까',  file: 'Moonfelt.mp3' },
-    { title: '달이 안 보여도 괜찮아',  file: 'nomoonnomoon.mp3' }
-    
-  // 곡 추가 시: { title: '제목', file: '파일명.mp3' } 형식으로 추가
+  { title: '오늘 밤하늘엔 달이 보일까',  file: 'Moonfelt.mp3' },
+  { title: '달이 안 보여도 괜찮아',  file: 'nomoonnomoon.mp3' }
 ];
-let bgmOn = false, bgmIdx = 0;
+
+let bgmOn = false, bgmIdx = 0, playAllMode = true; // playAllMode 추가
 const audio = new Audio();
-audio.loop = true;
+audio.loop = false; // 자동 반복은 끄고 코드로 제어합니다
 
 function loadBGM(idx) {
   const t = PLAYLIST[idx];
@@ -1112,14 +1117,45 @@ function loadBGM(idx) {
   if (bgmOn) audio.play().catch(()=>{});
 }
 
-// BGM 선택 팝업
+// 곡이 끝났을 때 다음 곡으로 넘기거나 반복하는 로직
+audio.onended = () => {
+  if (playAllMode) {
+    bgmIdx = (bgmIdx + 1) % PLAYLIST.length; // 다음 곡 번호로
+    loadBGM(bgmIdx);
+  } else {
+    audio.play(); // 한곡 반복 모드면 다시 재생
+  }
+};
+
+// BGM 팝업창 UI (전체재생/한곡반복 버튼 추가)
 const bgmPopupHtml = `
-  <div id="bgm-popup" style="display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:14px;padding:12px;z-index:100;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+  <div id="bgm-popup" style="display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:#1e1c14;border:1px solid rgba(255,220,100,0.2);border-radius:14px;padding:12px;z-index:100;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+    <div style="display:flex; gap:5px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+      <button id="btn-play-all" style="flex:1; padding:7px; font-size:11px; border-radius:8px; border:1.5px solid #f0d878; background:rgba(255,220,100,0.15); color:#f0d878; font-weight:bold; cursor:pointer;">🔁 전체재생</button>
+      <button id="btn-play-one" style="flex:1; padding:7px; font-size:11px; border-radius:8px; border:1.5px solid rgba(255,255,255,0.2); background:none; color:rgba(255,255,255,0.4); cursor:pointer;">🔂 한곡반복</button>
+    </div>
     ${PLAYLIST.map((t,i)=>`<div class="bgm-item" data-idx="${i}" style="padding:9px 14px;cursor:pointer;border-radius:8px;font-size:13px;color:#c8b878;display:flex;align-items:center;gap:8px;"><span>🎵</span><span>${i+1}. ${t.title}</span></div>`).join('')}
     <div id="bgm-off-btn" style="padding:9px 14px;cursor:pointer;border-radius:8px;font-size:13px;color:rgba(200,100,100,0.8);display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,0.07);margin-top:4px;"><span>⏹</span><span>음악 끄기</span></div>
   </div>`;
 document.getElementById('app').insertAdjacentHTML('beforeend', bgmPopupHtml);
 
+// 재생 모드 버튼 이벤트 연결
+function updateModeButtons() {
+  const allBtn = document.getElementById('btn-play-all');
+  const oneBtn = document.getElementById('btn-play-one');
+  if (playAllMode) {
+    allBtn.style.background = 'rgba(255,220,100,0.15)'; allBtn.style.color = '#f0d878'; allBtn.style.borderColor = '#f0d878';
+    oneBtn.style.background = 'none'; oneBtn.style.color = 'rgba(255,255,255,0.4)'; oneBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+  } else {
+    oneBtn.style.background = 'rgba(255,220,100,0.15)'; oneBtn.style.color = '#f0d878'; oneBtn.style.borderColor = '#f0d878';
+    allBtn.style.background = 'none'; allBtn.style.color = 'rgba(255,255,255,0.4)'; allBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+  }
+}
+
+document.getElementById('btn-play-all').addEventListener('click', () => { playAllMode = true; updateModeButtons(); });
+document.getElementById('btn-play-one').addEventListener('click', () => { playAllMode = false; updateModeButtons(); });
+
+// 기존 아이템 클릭 이벤트
 document.querySelectorAll('.bgm-item').forEach(item => {
   item.addEventListener('click', () => {
     bgmIdx = parseInt(item.dataset.idx);
@@ -1140,20 +1176,10 @@ document.getElementById('bgm-off-btn').addEventListener('click', () => {
 
 document.getElementById('nav-bgm').addEventListener('click', function() {
   const popup = document.getElementById('bgm-popup');
-  if (popup.style.display === 'none') {
-    popup.style.display = 'block';
-    setTimeout(() => {
-      document.addEventListener('click', function closePopup(e) {
-        if (!popup.contains(e.target) && e.target !== document.getElementById('nav-bgm')) {
-          popup.style.display = 'none';
-        }
-        document.removeEventListener('click', closePopup);
-      });
-    }, 100);
-  } else {
-    popup.style.display = 'none';
-  }
+  popup.style.display = (popup.style.display === 'none') ? 'block' : 'none';
 });
+
+loadBGM(0);
 
 // ===== 창문 색상 — 캄보디아 시간 기준 (UTC+7) =====
 function updateWindowColor() {

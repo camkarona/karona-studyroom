@@ -7,7 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Khmer+OS+Battambang&family=Noto+Sans+KR:wght@400;700&family=Nanum+Brush+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Brush+Script&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
@@ -120,8 +120,12 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
 }
 .kh-clickable:active { background:rgba(255,255,255,0.12); transform:scale(0.93); }
 #word-kh {
-  font-family:'Khmer OS Battambang', 'Khmer', 'Noto Sans Khmer', sans-serif;
-  font-size:34px; color:#f0ecd8; line-height:1.2; transition:opacity 0.4s;
+  /* 'Khmer OS Battambang' 대신 'Battambang'으로 수정 */
+  font-family: 'Battambang', sans-serif;
+  font-size: 34px;
+  color: #f0ecd8;
+  line-height: 1.2;
+  transition: opacity 0.4s;
 }
 .sound-icon { font-size:20px; opacity:0.85; transition:transform 0.15s; }
 .kh-clickable:active .sound-icon { transform:scale(1.3); }

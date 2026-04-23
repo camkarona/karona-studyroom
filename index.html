@@ -13,7 +13,7 @@
 html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; -webkit-user-select:none; }
 #app { width:100%; height:var(--tg-viewport-height,100vh); height:100dvh; display:flex; flex-direction:column; position:relative; overflow:hidden; }
 #blackboard {
-    cursor: pointer !important;window.addEventListener
+    cursor: pointer !important;
     z-index: 10; /* 다른 요소에 가려지지 않게 함 */
 }
 /* 배경 — 은은하게 어두운 카페 */
@@ -307,7 +307,7 @@ html,body { height:100%; overflow:hidden; background:#2a2820; user-select:none; 
   
   <div style="text-align:center;line-height:1.5;">
     <div style="font-size:11px;color:rgba(220,200,150,0.7);">별을 누르면 내 공책에 저장됩니다.</div>
-    <div style="font-size:11px;color:rgba(220,200,150,0.7);"> 이 / 멈추기 / 넘기기 </div>
+    <div style="font-size:11px;color:rgba(220,200,150,0.7);">이전 / 멈추기 / 넘기기</div>
   </div>
 </div>
 
@@ -800,14 +800,14 @@ function syncWord(isManual = false) {
 }
 // ===== 8자리 배치 =====
 const SEAT_POS = [
-  { top:'8%',  left:'8%'  },
-  { top:'8%',  right:'8%' },
-  { top:'34%', left:'4%'  },
-  { top:'34%', right:'4%' },
-  { bottom:'26%', left:'6%'  },
-  { bottom:'26%', right:'6%' },
-  { bottom:'8%',  left:'15%' },
-  { bottom:'8%',  right:'15%'},
+  { top:'5%',   left:'5%'  },
+  { top:'5%',   right:'5%' },
+  { top:'28%',  left:'2%'  }, // 위쪽으로 조금 올림
+  { top:'28%',  right:'2%' },
+  { bottom:'22%', left:'2%'  }, // 아래쪽으로 조금 내림
+  { bottom:'22%', right:'2%' },
+  { bottom:'5%',  left:'12%' },
+  { bottom:'5%',  right:'12%'},
 ];
 
 const STATUS_ICONS = {
@@ -1391,16 +1391,7 @@ window.addEventListener('pagehide', () => { if(mySeatRef) remove(mySeatRef); });
 window.addEventListener('unload', () => { if(mySeatRef) remove(mySeatRef); });
 if(tg) tg.onEvent('popupClosed', () => { if(mySeatRef) remove(mySeatRef); });
 
-// 다음 단어 넘기기 버튼 이벤트
-document.getElementById('skip-word-btn').addEventListener('click', () => {
-  if (!WORD_LIST.length) return;
-  
-  localOffset++; // 넘김 횟수 추가
-  syncWord();    // 즉시 단어 교체 실행
-  
-  // 텔레그램 햅틱 피드백 (진동)
-  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-});
+
     
 </script>
 </body>
